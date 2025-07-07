@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, request, redirect, url_for, session, flash, current_app, send_from_directory
 from flask_paginate import Pagination, get_page_args
-from .models import User, Post, Comment, PostImage, PostLike, CommentLike, Report, FriendRequest, Notification, Friendship, MarketplaceItem
+from .models import User, Post, Comment, PostImage, PostLike, CommentLike, Report, FriendRequest, Notification, Friendship, MarketplaceItem, Coupon
 from .db import db
 import jwt
 from jwt.exceptions import PyJWTError
@@ -527,3 +527,152 @@ def admin_logout():
     session.pop('admin_logged_in', None)
     flash('Admin logged out successfully.', 'success')
     return redirect(url_for('main.admin_login'))
+
+@bp.route('/add_balance', methods=['GET', 'POST'])
+def add_balance():
+    if 'token' not in session:
+        return redirect(url_for('main.login'))
+    decoded = jwt.decode(session['token'], JWT_SECRET, algorithms=['HS256'])
+    user = User.query.get(decoded['user_id'])
+    if request.method == 'POST':
+        address = request.form['address']
+        try:
+            amount = float(request.form['amount'])
+        except ValueError:
+            flash('Invalid amount.', 'danger')
+            return render_template('add_balance.html', user=user)
+        if not (1 <= amount <= 500):
+            flash('Amount must be between $1 and $500.', 'danger')
+            return render_template('add_balance.html', user=user)
+        # VULNERABLE: No real payment validation, just add to session
+        session['balance'] = session.get('balance', 0) + amount
+        flash(f'${amount} added to your balance!', 'success')
+        return redirect(url_for('main.marketplace'))
+    return render_template('add_balance.html', user=user)
+
+@bp.route('/admin/add_coupon', methods=['GET', 'POST'])
+@admin_required
+def admin_add_coupon():
+    from .models import Coupon
+    if request.method == 'POST':
+        coupon_code = request.form['coupon_code']
+        try:
+            percentage = float(request.form['percentage'])
+            max_discount = float(request.form['max_discount'])
+            price = float(request.form['price'])
+        except ValueError:
+            flash('Invalid numeric value.', 'danger')
+            return render_template('admin/add_coupon.html')
+        expiry_date = request.form['expiry_date']
+        from datetime import datetime
+        try:
+            expiry_date_obj = datetime.strptime(expiry_date, '%Y-%m-%d')
+        except ValueError:
+            flash('Invalid expiry date.', 'danger')
+            return render_template('admin/add_coupon.html')
+        # VULNERABLE: No duplicate check, no input sanitization
+        coupon = Coupon(
+            coupon_code=coupon_code,
+            percentage=percentage,
+            max_discount=max_discount,
+            expiry_date=expiry_date_obj,
+            price=price
+        )
+        db.session.add(coupon)
+        db.session.commit()
+        flash('Coupon added successfully!', 'success')
+        return redirect(url_for('main.admin_add_coupon'))
+    return render_template('admin/add_coupon.html')
+
+@bp.route('/buy_coupon', methods=['GET'])
+def buy_coupon_page():
+    if 'token' not in session:
+        return redirect(url_for('main.login'))
+    from .models import Coupon
+    coupons = Coupon.query.order_by(Coupon.expiry_date.asc()).all()
+    return render_template('buy_coupon.html', coupons=coupons)
+
+@bp.route('/buy_coupon/<int:coupon_id>', methods=['POST'])
+def buy_coupon(coupon_id):
+    if 'token' not in session:
+        return redirect(url_for('main.login'))
+    from .models import Coupon
+    coupon = Coupon.query.get(coupon_id)
+    if not coupon:
+        flash('Coupon not found.', 'danger')
+        return redirect(url_for('main.buy_coupon_page'))
+    # VULNERABLE: No check for already purchased, no real payment
+    balance = session.get('balance', 0)
+    if balance < coupon.price:
+        flash('Insufficient balance to buy this coupon.', 'danger')
+        return redirect(url_for('main.buy_coupon_page'))
+    session['balance'] = balance - coupon.price
+    # Store purchased coupon IDs in session (for demo)
+    purchased = session.get('purchased_coupons', [])
+    purchased.append(coupon.id)
+    session['purchased_coupons'] = purchased
+    flash(f'Coupon {coupon.coupon_code} purchased successfully!', 'success')
+    return redirect(url_for('main.buy_coupon_page'))
+
+@bp.route('/add_to_cart/<int:item_id>', methods=['POST'])
+def add_to_cart(item_id):
+    if 'token' not in session:
+        return redirect(url_for('main.login'))
+    # VULNERABLE: No ownership or duplicate checks
+    cart = session.get('cart', [])
+    cart.append(item_id)
+    session['cart'] = cart
+    flash('Item added to cart!', 'success')
+    return redirect(url_for('main.marketplace'))
+
+@bp.route('/remove_from_cart/<int:item_id>', methods=['POST'])
+def remove_from_cart(item_id):
+    cart = session.get('cart', [])
+    if item_id in cart:
+        cart = [i for i in cart if i != item_id]
+        session['cart'] = cart
+        flash('Item removed from cart.', 'success')
+    else:
+        flash('Item not found in cart.', 'danger')
+    return redirect(url_for('main.view_cart'))
+
+@bp.route('/cart')
+def view_cart():
+    if 'token' not in session:
+        return redirect(url_for('main.login'))
+    cart = session.get('cart', [])
+    from .models import MarketplaceItem
+    items = MarketplaceItem.query.filter(MarketplaceItem.id.in_(cart)).all() if cart else []
+    return render_template('cart.html', items=items)
+
+@bp.route('/checkout', methods=['GET', 'POST'])
+def checkout():
+    if 'token' not in session:
+        return redirect(url_for('main.login'))
+    cart = session.get('cart', [])
+    from .models import MarketplaceItem, Coupon
+    items = MarketplaceItem.query.filter(MarketplaceItem.id.in_(cart)).all() if cart else []
+    total = sum(float(item.price) for item in items)
+    discount = 0
+    applied_coupons = []
+    if request.method == 'POST':
+        coupon_codes = request.form.get('coupon_code')
+        if coupon_codes:
+            # Allow comma-separated multiple coupons
+            for code in coupon_codes.split(','):
+                code = code.strip()
+                coupon = Coupon.query.filter_by(coupon_code=code).first()
+                if coupon:
+                    # VULNERABLE: No expiry, ownership, or duplicate check, and no max discount
+                    discount += total * (coupon.percentage / 100)
+                    applied_coupons.append(coupon)
+                else:
+                    flash(f'Invalid coupon code: {code}', 'danger')
+        balance = session.get('balance', 0)
+        final_total = total - discount
+        # VULNERABLE: No balance check, allow negative balances
+        session['balance'] = balance - final_total
+        session['cart'] = []
+        flash(f'Payment successful! Thanks for ordering. You paid ${final_total:.2f}.', 'success')
+        return redirect(url_for('main.marketplace'))
+    return render_template('checkout.html', items=items, total=total, discount=discount, applied_coupons=applied_coupons)

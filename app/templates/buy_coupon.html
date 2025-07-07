@@ -1,0 +1,34 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mt-4">
+    <h2>Available Coupons</h2>
+    <table class="table table-bordered table-striped mt-3">
+        <thead>
+            <tr>
+                <th>Coupon Code</th>
+                <th>Discount (%)</th>
+                <th>Max Discount ($)</th>
+                <th>Expiry Date</th>
+                <th>Price ($)</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for coupon in coupons %}
+            <tr>
+                <td>{{ coupon.coupon_code }}</td>
+                <td>{{ coupon.percentage }}</td>
+                <td>{{ coupon.max_discount }}</td>
+                <td>{{ coupon.expiry_date.date() }}</td>
+                <td>{{ coupon.price }}</td>
+                <td>
+                    <form method="POST" action="{{ url_for('main.buy_coupon', coupon_id=coupon.id) }}">
+                        <button type="submit" class="btn btn-success btn-sm">Buy</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

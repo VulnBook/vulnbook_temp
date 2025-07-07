@@ -164,3 +164,12 @@ class MarketplaceItem(db.Model):
     review = db.Column(db.Text, nullable=True)
     approved = db.Column(db.Boolean, default=False)  # Only approved items are shown
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+class Coupon(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    coupon_code = db.Column(db.String(32), unique=True, nullable=False)
+    percentage = db.Column(db.Float, nullable=False)  # Discount percentage
+    max_discount = db.Column(db.Float, nullable=False)  # Maximum discount amount
+    expiry_date = db.Column(db.DateTime, nullable=False)
+    price = db.Column(db.Float, nullable=False)  # Price to buy the coupon
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)

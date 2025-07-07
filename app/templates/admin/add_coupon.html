@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mt-4" style="max-width: 500px;">
+    <h2>Add Coupon</h2>
+    <form method="POST">
+        <div class="mb-3">
+            <label for="coupon_code" class="form-label">Coupon Code</label>
+            <input type="text" class="form-control" id="coupon_code" name="coupon_code" required>
+        </div>
+        <div class="mb-3">
+            <label for="percentage" class="form-label">Discount Percentage</label>
+            <input type="number" class="form-control" id="percentage" name="percentage" min="1" max="100" required>
+        </div>
+        <div class="mb-3">
+            <label for="max_discount" class="form-label">Maximum Discount ($)</label>
+            <input type="number" class="form-control" id="max_discount" name="max_discount" min="1" required>
+        </div>
+        <div class="mb-3">
+            <label for="expiry_date" class="form-label">Expiry Date</label>
+            <input type="date" class="form-control" id="expiry_date" name="expiry_date" required>
+        </div>
+        <div class="mb-3">
+            <label for="price" class="form-label">Coupon Price ($)</label>
+            <input type="number" class="form-control" id="price" name="price" min="1" required>
+        </div>
+        <button type="submit" class="btn btn-success">Add Coupon</button>
+    </form>
+</div>
+{% endblock %}

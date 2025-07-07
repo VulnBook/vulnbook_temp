@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mt-4" style="max-width:600px;">
+    <h2>Checkout</h2>
+    {% if items %}
+    <form method="POST">
+        <table class="table table-bordered table-striped mt-3">
+            <thead>
+                <tr>
+                    <th>Product</th>
+                    <th>Price</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in items %}
+                <tr>
+                    <td>{{ item.description }}</td>
+                    <td>${{ item.price }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <div class="mb-3">
+            <label for="coupon_code" class="form-label">Coupon Code (optional)</label>
+            <input type="text" class="form-control" id="coupon_code" name="coupon_code">
+        </div>
+        {% if applied_coupons %}
+        <div class="alert alert-success">
+          Coupons applied:
+          <ul>
+            {% for coupon in applied_coupons %}
+              <li><b>{{ coupon.coupon_code }}</b> ({{ coupon.percentage }}%)</li>
+            {% endfor %}
+          </ul>
+          Total discount: -${{ '%.2f' % discount }}
+        </div>
+        {% endif %}
+        <h4>
+          Total: ${{ '%.2f' % total }}
+          {% if discount %}
+            - ${{ '%.2f' % discount }} = ${{ '%.2f' % (total - discount) }}
+          {% endif %}
+        </h4>
+        <button type="submit" class="btn btn-success">Pay</button>
+    </form>
+    {% else %}
+    <div class="alert alert-info">Your cart is empty.</div>
+    {% endif %}
+</div>
+{% endblock %}
