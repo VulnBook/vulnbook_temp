@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Search Results for "{{ query }}"</h2>
+{% if posts %}
+    {% for post in posts %}
+        <div class="card mb-3">
+            <div class="card-body">
+                <h5 class="card-title"><a href="{{ url_for('main.profile', id=post.user.id) }}">@{{ post.user.username }}</a></h5>
+                <p class="card-text">{{ post.content }}</p>
+                <p class="card-text"><small class="text-muted">{{ post.created_at }}</small></p>
+                <a href="{{ url_for('main.single_post', post_id=post.id) }}" class="btn btn-outline-primary btn-sm">View Post</a>
+            </div>
+        </div>
+    {% endfor %}
+{% else %}
+    <p>No posts found.</p>
+{% endif %}
+{% endblock %}

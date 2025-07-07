@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Notifications</h2>
+{% if notifications %}
+    <ul class="list-group mb-4">
+        {% for note in notifications %}
+            <li class="list-group-item">
+                {{ note.message }}
+                {% if note.message == 'You have a new friend request.' %}
+                    <a href="{{ url_for('main.friend_requests_page') }}">View</a>
+                {% elif note.link %}
+                    <a href="{{ note.link }}">View</a>
+                {% endif %}
+            </li>
+        {% endfor %}
+    </ul>
+{% else %}
+    <p>No notifications.</p>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-12 col-md-6">
+        <h2>{{ user.firstname }} {{ user.lastname }}'s Profile</h2>
+        <div class="card">
+            {% if user.image_url %}
+                <img src="{{ user.image_url }}" class="card-img-top" alt="Profile Image">
+            {% else %}
+                <img src="https://via.placeholder.com/150" class="card-img-top" alt="Profile Image">
+            {% endif %}
+            <div class="card-body">
+                <h5 class="card-title">@{{ user.username }}</h5>
+                <p class="card-text"><strong>Date of Birth:</strong> {{ user.dob }}</p>
+                <p class="card-text"><strong>Bio:</strong> {{ user.bio or 'No bio set.' }}</p>
+                {% if not editable and current_user and current_user.id != user.id %}
+                    {% set already_friends = false %}
+                    {% set request_sent = false %}
+                    {% set request_received = false %}
+                    {% for f in current_user.friendships %}
+                        {% if f.friend_id == user.id %}
+                            {% set already_friends = true %}
+                        {% endif %}
+                    {% endfor %}
+                    {% for fr in current_user.friend_requests_sent %}
+                        {% if fr.to_user_id == user.id and fr.status == 'pending' %}
+                            {% set request_sent = true %}
+                        {% endif %}
+                    {% endfor %}
+                    {% for fr in current_user.friend_requests_received %}
+                        {% if fr.from_user_id == user.id and fr.status == 'pending' %}
+                            {% set request_received = true %}
+                        {% endif %}
+                    {% endfor %}
+                    {% if already_friends %}
+                        <span class="badge bg-success">Friends</span>
+                        <form method="POST" action="{{ url_for('main.unfriend', user_id=user.id) }}" style="display:inline;">
+                            <button class="btn btn-sm btn-outline-danger" type="submit">Unfriend</button>
+                        </form>
+                    {% elif request_sent %}
+                        <span class="badge bg-warning text-dark">Friend Request Sent</span>
+                        <form method="POST" action="{{ url_for('main.cancel_friend_request', to_user_id=user.id) }}" style="display:inline;">
+                            <button class="btn btn-sm btn-outline-danger" type="submit">Cancel Request</button>
+                        </form>
+                    {% elif request_received %}
+                        <span class="badge bg-info text-dark">Friend Request Received</span>
+                    {% else %}
+                        <form method="POST" action="{{ url_for('main.send_friend_request', to_user_id=user.id) }}" style="display:inline;">
+                            <button class="btn btn-sm btn-outline-primary" type="submit">Send Friend Request</button>
+                        </form>
+                    {% endif %}
+                {% endif %}
+                {% if editable %}
+                    <form method="POST" enctype="multipart/form-data">
+                        <div class="mb-3">
+                            <label for="bio" class="form-label">Edit Bio</label>
+                            <textarea class="form-control" id="bio" name="bio">{{ user.bio }}</textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label for="image_url" class="form-label">Profile Image URL</label>
+                            <input type="text" class="form-control" id="image_url" name="image_url" value="{{ user.image_url }}">
+                        </div>
+                        <button type="submit" class="btn btn-primary">Update Profile</button>
+                    </form>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

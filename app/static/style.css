@@ -1,0 +1,33 @@
+/* body {
+    background-color: #f8f9fa;
+}
+.container {
+    max-width: 800px;
+}
+.card {
+    border-radius: 10px;
+} */
+ body {
+    background-color: #f8f9fa;
+}
+.container {
+    max-width: 800px;
+}
+.card {
+    border-radius: 10px;
+}
+.img-fluid {
+    max-width: 100%;
+    height: auto;
+}
+video {
+    max-width: 100%;
+}
+@media (max-width: 576px) {
+    .card {
+        margin-bottom: 1rem;
+    }
+    .btn-sm {
+        font-size: 0.8rem;
+    }
+}

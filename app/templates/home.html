@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h2>Home</h2>
+        <div class="card mb-3">
+            <div class="card-body">
+                <h3>Create a Post</h3>
+                <form method="POST" action="{{ url_for('main.create_post') }}" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <textarea class="form-control" name="content" placeholder="Write a post..." rows="4" required></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="files" class="form-label">Upload Images/Videos</label>
+                        <input type="file" class="form-control" id="files" name="files" multiple accept="image/*,video/mp4">
+                    </div>
+                    <button type="submit" class="btn btn-primary">Post</button>
+                </form>
+            </div>
+        </div>
+        <h3>All Posts</h3>
+        {% for post in posts %}
+            <div class="card mb-3">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="card-title"><a href="{{ url_for('main.profile', id=post.user.id) }}">@{{ post.user.username }}</a></h5>
+                        <div class="dropdown">
+                            <button class="btn btn-link" type="button" id="dropdownMenuButton{{ post.id }}" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="bi bi-three-dots"></i>
+                            </button>
+                            <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton{{ post.id }}">
+                                {% if user.id == post.user.id %}
+                                    <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#editPostModal{{ post.id }}">Edit</a></li>
+                                    <li>
+                                        <form method="POST" action="{{ url_for('main.delete_post', post_id=post.id) }}">
+                                            <button type="submit" class="dropdown-item">Delete</button>
+                                        </form>
+                                    </li>
+                                {% endif %}
+                                <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#reportPostModal{{ post.id }}">Report</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                    <p class="card-text">{{ post.content | safe }}</p> <!-- VULNERABLE: XSS -->
+                    {% for image in post.images %}
+                        {% if image.file_type == 'image' %}
+                            <img src="{{ url_for('static', filename=image.file_path) }}" class="img-fluid mb-2" alt="Post Image">
+                        {% else %}
+                            <video controls class="img-fluid mb-2">
+                                <source src="{{ url_for('static', filename=image.file_path) }}" type="video/mp4">
+                            </video>
+                        {% endif %}
+                    {% endfor %}
+                    <p class="card-text"><small class="text-muted">{{ post.created_at }}</small></p>
+                    <div class="d-flex gap-2">
+                        <form method="POST" action="{{ url_for('main.like_post', post_id=post.id) }}" style="display:inline;">
+                            <button type="submit" class="btn btn-outline-primary btn-sm">Like ({{ post.likes | length }})</button>
+                        </form>
+                        <a href="{{ url_for('main.single_post', post_id=post.id) }}" class="btn btn-outline-secondary btn-sm">Comment</a>
+                        <form method="POST" action="{{ url_for('main.share_post', post_id=post.id) }}" style="display:inline;">
+                            <button type="submit" class="btn btn-outline-success btn-sm">Share</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            <!-- Edit Post Modal -->
+            <div class="modal fade" id="editPostModal{{ post.id }}" tabindex="-1" aria-labelledby="editPostModalLabel{{ post.id }}" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="editPostModalLabel{{ post.id }}">Edit Post</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <form method="POST" action="{{ url_for('main.edit_post', post_id=post.id) }}">
+                            <div class="modal-body">
+                                <div class="mb-3">
+                                    <textarea class="form-control" name="content" required>{{ post.content }}</textarea>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                <button type="submit" class="btn btn-primary">Save changes</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            <!-- Report Post Modal -->
+            <div class="modal fade" id="reportPostModal{{ post.id }}" tabindex="-1" aria-labelledby="reportPostModalLabel{{ post.id }}" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="reportPostModalLabel{{ post.id }}">Report Post</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <form method="POST" action="{{ url_for('main.report') }}">
+                            <div class="modal-body">
+                                <input type="hidden" name="post_id" value="{{ post.id }}">
+                                <div class="mb-3">
+                                    <label for="reason" class="form-label">Reason for reporting</label>
+                                    <textarea class="form-control" name="reason" required></textarea>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                <button type="submit" class="btn btn-danger">Report</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+        {{ pagination.links }}
+    </div>
+</div>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+{% endblock %}

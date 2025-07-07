@@ -1,0 +1,18 @@
+User-agent: *
+Allow: /
+
+# Visitable paths
+Allow: / 
+Allow: /login
+Allow: /register
+Allow: /post
+Allow: /post/<POST_ID>
+Allow: /post/<POST_ID>/edit
+Allow: /post/<POST_ID>/delete
+Allow: /post/<POST_ID>/like
+Allow: /post/<POST_ID>/share
+Allow: /comment/<COMMENT_ID>/delete
+Allow: /comment/<COMMENT_ID>/like
+Allow: /profile/<ID>
+Allow: /report
+Allow: /static/
