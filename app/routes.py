@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, request, redirect, url_for, session, flash, current_app, send_from_directory
 from flask_paginate import Pagination, get_page_args
-from .models import User, Post, Comment, PostImage, PostLike, CommentLike, Report, FriendRequest, Notification, Friendship
+from .models import User, Post, Comment, PostImage, PostLike, CommentLike, Report, FriendRequest, Notification, Friendship, MarketplaceItem
 from .db import db
 import jwt
 from jwt.exceptions import PyJWTError
@@ -8,6 +8,8 @@ import datetime
 import os
 import uuid
 import re
+from sqlalchemy import text
+from functools import wraps
 
 bp = Blueprint('main', __name__)
 
@@ -73,13 +75,21 @@ def login():
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
-        user = User.query.filter_by(username=username, password=password).first()  # VULNERABLE: Plain-text password check
+
+        # ⚠️ Deliberately vulnerable to SQL injection
+        query = text(f"SELECT * FROM \"user\" WHERE username = '{username}' AND password = '{password}'")
+        result = db.session.execute(query)
+        user = result.fetchone()
+
         if user:
-            session['token'] = generate_token(user.id)
+            session['token'] = generate_token(user[0])
             flash('Logged in successfully!', 'success')
             return redirect(url_for('main.index'))
+
         flash('Invalid credentials', 'danger')
+
     return render_template('login.html')
+
 
 @bp.route('/post', methods=['POST'])
 def create_post():
@@ -103,7 +113,8 @@ def create_post():
             file_path = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
             file.save(file_path)
             file_type = 'image' if file.mimetype.startswith('image') else 'video'
-            post_image = PostImage(post_id=post.id, file_path=f'static/uploads/{filename}', file_type=file_type)
+            # Store only the path relative to 'static/'
+            post_image = PostImage(post_id=post.id, file_path=f'uploads/{filename}', file_type=file_type)
             db.session.add(post_image)
     db.session.commit()
     flash('Post created successfully!', 'success')
@@ -230,6 +241,8 @@ def profile(id):
                 editable = True
         except PyJWTError:
             pass
+    # Fetch all posts by this user (new)
+    user_posts = Post.query.filter_by(user_id=user.id).order_by(Post.created_at.desc()).all()
     if request.method == 'POST' and editable:
         bio = request.form.get('bio')
         image_url = request.form.get('image_url')
@@ -237,7 +250,7 @@ def profile(id):
         user.image_url = image_url
         db.session.commit()
         flash('Profile updated successfully!', 'success')
-    return render_template('profile.html', user=user, editable=editable, current_user=current_user)
+    return render_template('profile.html', user=user, editable=editable, current_user=current_user, user_posts=user_posts)
 
 @bp.route('/share/<int:post_id>', methods=['POST'])
 def share_post(post_id):
@@ -384,15 +397,133 @@ def friend_requests_page():
     sent = FriendRequest.query.filter_by(from_user_id=user.id, status='pending').all()
     return render_template('friend_requests.html', user=user, received=received, sent=sent)
 
-@bp.route('/unfriend/<int:user_id>', methods=['POST'])
-def unfriend(user_id):
+@bp.route('/marketplace')
+def marketplace():
     if 'token' not in session:
         return redirect(url_for('main.login'))
     decoded = jwt.decode(session['token'], JWT_SECRET, algorithms=['HS256'])
-    current_user_id = decoded['user_id']
-    # Remove both directions of friendship
-    Friendship.query.filter_by(user_id=current_user_id, friend_id=user_id).delete()
-    Friendship.query.filter_by(user_id=user_id, friend_id=current_user_id).delete()
-    db.session.commit()
-    flash('Unfriended successfully.', 'info')
-    return redirect(url_for('main.profile', id=user_id))
+    user = User.query.get(decoded['user_id'])
+    # Only show approved items
+    items = MarketplaceItem.query.filter_by(approved=True).order_by(MarketplaceItem.created_at.desc()).all()
+    return render_template('marketplace.html', user=user, items=items)
+
+@bp.route('/marketplace/create', methods=['GET', 'POST'])
+def create_marketplace_item():
+    if 'token' not in session:
+        return redirect(url_for('main.login'))
+    decoded = jwt.decode(session['token'], JWT_SECRET, algorithms=['HS256'])
+    user = User.query.get(decoded['user_id'])
+    if not user:
+        flash('User not found. Please log in again.', 'danger')
+        return redirect(url_for('main.login'))
+    if request.method == 'POST':
+        price = request.form['price']
+        description = request.form['description']  # VULNERABLE: No sanitization (XSS)
+        review = request.form.get('review')
+        image = request.files.get('image')
+        image_url = None
+        if image and allowed_file(image.filename):
+            filename = str(uuid.uuid4()) + '.' + image.filename.rsplit('.', 1)[1].lower()
+            file_path = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
+            image.save(file_path)
+            image_url = f'static/uploads/{filename}'
+        item = MarketplaceItem(user_id=user.id, image_url=image_url, price=price, description=description, review=review, approved=False)
+        db.session.add(item)
+        db.session.commit()
+        flash('Item submitted for approval. It will be listed once approved by admin.', 'info')
+        return redirect(url_for('main.marketplace'))
+    return render_template('create_marketplace_item.html', user=user)
+
+@bp.route('/admin/login', methods=['GET', 'POST'])
+def admin_login():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        # Hardcoded credentials (intentionally insecure)
+        if username == 'admin' and password == 'password':
+            session['admin_logged_in'] = True
+            flash('Admin login successful!', 'success')
+            return redirect(url_for('main.admin_panel'))
+        else:
+            flash('Invalid admin credentials.', 'danger')
+    return render_template('admin/admin_login.html')
+
+def admin_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not session.get('admin_logged_in'):
+            return redirect(url_for('main.admin_login'))
+        return f(*args, **kwargs)
+    return decorated_function
+
+@bp.route('/admin')
+@admin_required
+def admin_panel():
+    return render_template('admin/admin_panel.html')
+
+@bp.route('/admin/users')
+@admin_required
+def admin_all_users():
+    from .models import User
+    users = User.query.all()
+    return render_template('admin/all_users.html', users=users)
+
+@bp.route('/admin/delete_user/<int:user_id>', methods=['POST'])
+@admin_required
+def admin_delete_user(user_id):
+    from .models import User
+    user = User.query.get(user_id)
+    if user:
+        db.session.delete(user)
+        db.session.commit()
+        flash(f'User {user.username} deleted.', 'success')
+    else:
+        flash('User not found.', 'danger')
+    return redirect(url_for('main.admin_all_users'))
+
+@bp.route('/admin/reports')
+@admin_required
+def admin_all_reports():
+    from .models import Report
+    reports = Report.query.order_by(Report.created_at.desc()).all()
+    return render_template('admin/all_reports.html', reports=reports)
+
+@bp.route('/admin/marketplace_items')
+@admin_required
+def admin_marketplace_items():
+    from .models import MarketplaceItem
+    items = MarketplaceItem.query.filter_by(approved=False).order_by(MarketplaceItem.created_at.desc()).all()
+    return render_template('admin/marketplace_items.html', items=items)
+
+@bp.route('/admin/marketplace_items/<int:item_id>/approve', methods=['POST'])
+@admin_required
+def admin_approve_marketplace_item(item_id):
+    from .models import MarketplaceItem
+    item = MarketplaceItem.query.get(item_id)
+    if item:
+        item.approved = True
+        db.session.commit()
+        flash('Marketplace item approved.', 'success')
+    else:
+        flash('Item not found.', 'danger')
+    return redirect(url_for('main.admin_marketplace_items'))
+
+@bp.route('/admin/marketplace_items/<int:item_id>/reject', methods=['POST'])
+@admin_required
+def admin_reject_marketplace_item(item_id):
+    from .models import MarketplaceItem
+    item = MarketplaceItem.query.get(item_id)
+    if item:
+        db.session.delete(item)
+        db.session.commit()
+        flash('Marketplace item rejected and deleted.', 'info')
+    else:
+        flash('Item not found.', 'danger')
+    return redirect(url_for('main.admin_marketplace_items'))
+
+@bp.route('/admin/logout')
+@admin_required
+def admin_logout():
+    session.pop('admin_logged_in', None)
+    flash('Admin logged out successfully.', 'success')
+    return redirect(url_for('main.admin_login'))

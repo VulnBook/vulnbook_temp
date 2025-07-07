@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mt-4">
+    <h2>All Reports</h2>
+    <table class="table table-bordered table-striped mt-3">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Reporter</th>
+                <th>Post ID</th>
+                <th>Comment ID</th>
+                <th>Reason</th>
+                <th>Created At</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for report in reports %}
+            <tr>
+                <td>{{ report.id }}</td>
+                <td>
+                    {% if report.user %}
+                        <a href="{{ url_for('main.profile', id=report.user.id) }}">@{{ report.user.username }}</a>
+                    {% else %}
+                        Unknown
+                    {% endif %}
+                </td>
+                <td>{% if report.post_id %}<a href="{{ url_for('main.single_post', post_id=report.post_id) }}">{{ report.post_id }}</a>{% endif %}</td>
+                <td>{% if report.comment_id %}{{ report.comment_id }}{% endif %}</td>
+                <td>{{ report.reason }}</td>
+                <td>{{ report.created_at }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

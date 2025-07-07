@@ -84,6 +84,7 @@ class User(db.Model):
     friend_requests_received = db.relationship('FriendRequest', foreign_keys='FriendRequest.to_user_id', backref='receiver')
     notifications = db.relationship('Notification', backref='user')
     friendships = db.relationship('Friendship', foreign_keys='Friendship.user_id', backref='user_friend')
+    marketplace_items = db.relationship('MarketplaceItem', backref='user')
 
 class Post(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -153,3 +154,13 @@ class Friendship(db.Model):
     friend_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     __table_args__ = (db.UniqueConstraint('user_id', 'friend_id', name='unique_friendship'),)
+
+class MarketplaceItem(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    image_url = db.Column(db.String(255), nullable=True)  # No validation, vulnerable
+    price = db.Column(db.String(32), nullable=False)  # Stored as string for easy injection
+    description = db.Column(db.Text, nullable=False)
+    review = db.Column(db.Text, nullable=True)
+    approved = db.Column(db.Boolean, default=False)  # Only approved items are shown
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
