@@ -40,45 +40,63 @@ def create_demo_data():
     users = [
         User(
             username='admin',
-            email='admin@vulnbook.com',
+            firstname='Admin',
+            lastname='User',
+            dob=datetime(1990, 1, 1).date(),
             password='admin123',  # Intentionally vulnerable: plain text
             bio='System Administrator',
-            image_url='static/uploads/admin.jpg'
+            image_url='static/uploads/admin.jpg',
+            created_at=datetime.utcnow()
         ),
         User(
             username='alice',
-            email='alice@example.com',
+            firstname='Alice',
+            lastname='Smith',
+            dob=datetime(1995, 5, 15).date(),
             password='password123',  # Intentionally vulnerable: plain text
             bio='Software developer who loves coding and coffee ☕',
-            image_url='static/uploads/alice.jpg'
+            image_url='static/uploads/alice.jpg',
+            created_at=datetime.utcnow()
         ),
         User(
             username='bob',
-            email='bob@example.com',
+            firstname='Bob',
+            lastname='Brown',
+            dob=datetime(1992, 8, 22).date(),
             password='qwerty',  # Intentionally vulnerable: weak password
             bio='Security researcher and bug bounty hunter 🔍',
-            image_url='static/uploads/bob.jpg'
+            image_url='static/uploads/bob.jpg',
+            created_at=datetime.utcnow()
         ),
         User(
             username='charlie',
-            email='charlie@example.com',
+            firstname='Charlie',
+            lastname='Davis',
+            dob=datetime(1998, 3, 10).date(),
             password='123456',  # Intentionally vulnerable: weak password
             bio='Web designer and UI/UX enthusiast 🎨',
-            image_url=None
+            image_url=None,
+            created_at=datetime.utcnow()
         ),
         User(
             username='diana',
-            email='diana@example.com',
+            firstname='Diana',
+            lastname='Evans',
+            dob=datetime(1994, 12, 5).date(),
             password='password',  # Intentionally vulnerable: common password
             bio='Data scientist working with machine learning 🤖',
-            image_url='static/uploads/diana.jpg'
+            image_url='static/uploads/diana.jpg',
+            created_at=datetime.utcnow()
         ),
         User(
             username='eve',
-            email='eve@example.com',
+            firstname='Eve',
+            lastname='Foster',
+            dob=datetime(2000, 7, 20).date(),
             password='letmein',  # Intentionally vulnerable: weak password
             bio='Cybersecurity student learning ethical hacking 🛡️',
-            image_url=None
+            image_url=None,
+            created_at=datetime.utcnow()
         )
     ]
     
@@ -113,50 +131,47 @@ def create_demo_data():
         Post(
             user_id=1,
             content='Welcome to VulnBook! 🎉 This is a vulnerable social networking app for security testing. #vulnbook #security',
-            timestamp=datetime.utcnow() - timedelta(days=5),
-            hashtags='#vulnbook #security'
+            timestamp=datetime.utcnow() - timedelta(days=5)
         ),
         Post(
             user_id=2,
             content='Just deployed my new Flask application! Love working with Python 🐍 #python #flask #webdev',
-            timestamp=datetime.utcnow() - timedelta(days=4),
-            hashtags='#python #flask #webdev'
+            timestamp=datetime.utcnow() - timedelta(days=4)
         ),
         Post(
             user_id=3,
             content='Found an interesting SQL injection vulnerability today. Always validate your inputs! #sqli #security #bugbounty',
-            timestamp=datetime.utcnow() - timedelta(days=3),
-            hashtags='#sqli #security #bugbounty'
+            timestamp=datetime.utcnow() - timedelta(days=3)
+            
         ),
         Post(
             user_id=4,
             content='Working on a new UI design for mobile apps. User experience is everything! 📱 #ui #ux #design',
-            timestamp=datetime.utcnow() - timedelta(days=2),
-            hashtags='#ui #ux #design'
+            timestamp=datetime.utcnow() - timedelta(days=2)
+            
         ),
         Post(
             user_id=5,
             content='Training a neural network to detect malware. Machine learning + cybersecurity = ❤️ #ml #ai #cybersecurity',
-            timestamp=datetime.utcnow() - timedelta(days=1),
-            hashtags='#ml #ai #cybersecurity'
+            timestamp=datetime.utcnow() - timedelta(days=1)
+            
         ),
         Post(
             user_id=6,
             content='Learning about XSS vulnerabilities. <script>alert("XSS")</script> #xss #learning #security',
-            timestamp=datetime.utcnow() - timedelta(hours=12),
-            hashtags='#xss #learning #security'
+            timestamp=datetime.utcnow() - timedelta(hours=12)
+            
         ),
         Post(
             user_id=2,
             content='Coffee break! ☕ Nothing beats a good cup of coffee while coding.',
-            timestamp=datetime.utcnow() - timedelta(hours=6),
-            hashtags=''
+            timestamp=datetime.utcnow() - timedelta(hours=6)
+            
         ),
         Post(
             user_id=3,
             content='Check out this awesome security tool I found: https://github.com/example/security-tool #tools #security',
-            timestamp=datetime.utcnow() - timedelta(hours=3),
-            hashtags='#tools #security'
+            timestamp=datetime.utcnow() - timedelta(hours=3)
         )
     ]
     
@@ -306,40 +321,35 @@ def create_demo_data():
             percentage=10,
             max_discount=10.0,
             price=5.0,
-            expiry_date=datetime.utcnow() + timedelta(days=30),
-            description='Welcome discount - 10% off your first purchase!'
+            expiry_date=datetime.utcnow() + timedelta(days=30)
         ),
         Coupon(
             coupon_code='SAVE20',
             percentage=20,
             max_discount=20.0,
             price=8.0,
-            expiry_date=datetime.utcnow() + timedelta(days=15),
-            description='Save 20% on any purchase!'
+            expiry_date=datetime.utcnow() + timedelta(days=15)
         ),
         Coupon(
             coupon_code='STUDENT50',
             percentage=50,
             max_discount=50.0,
             price=15.0,
-            expiry_date=datetime.utcnow() + timedelta(days=7),
-            description='Student discount - 50% off educational content!'
+            expiry_date=datetime.utcnow() + timedelta(days=7)
         ),
         Coupon(
             coupon_code='EXPIRED',
             percentage=25,
             max_discount=25.0,
             price=10.0,
-            expiry_date=datetime.utcnow() - timedelta(days=1),  # Expired
-            description='Expired coupon for testing purposes'
+            expiry_date=datetime.utcnow() - timedelta(days=1)
         ),
         Coupon(
             coupon_code='FREEBIE',
             percentage=100,
             max_discount=1000.0,
             price=0.0,
-            expiry_date=datetime.utcnow() + timedelta(days=365),
-            description='Free coupon - 100% off! (For testing vulnerabilities)'
+            expiry_date=datetime.utcnow() + timedelta(days=365)
         )
     ]
     
@@ -355,27 +365,37 @@ def create_demo_data():
         Notification(
             user_id=2,
             message='Welcome to VulnBook! Start by creating your first post.',
-            timestamp=datetime.utcnow() - timedelta(days=5)
+            link=None,
+            is_read=False,
+            created_at=datetime.utcnow() - timedelta(days=5)
         ),
         Notification(
             user_id=3,
             message='You have a new friend request.',
-            timestamp=datetime.utcnow() - timedelta(days=3)
+            link=None,
+            is_read=False,
+            created_at=datetime.utcnow() - timedelta(days=3)
         ),
         Notification(
             user_id=4,
             message='Someone liked your post!',
-            timestamp=datetime.utcnow() - timedelta(days=2)
+            link=None,
+            is_read=False,
+            created_at=datetime.utcnow() - timedelta(days=2)
         ),
         Notification(
             user_id=5,
             message='Your marketplace item has been approved!',
-            timestamp=datetime.utcnow() - timedelta(days=1)
+            link=None,
+            is_read=False,
+            created_at=datetime.utcnow() - timedelta(days=1)
         ),
         Notification(
             user_id=6,
             message='Your marketplace item is pending approval.',
-            timestamp=datetime.utcnow() - timedelta(hours=12)
+            link=None,
+            is_read=False,
+            created_at=datetime.utcnow() - timedelta(hours=12)
         )
     ]
     
@@ -437,14 +457,12 @@ def main():
     print("\n" + "=" * 50)
     print("Database setup completed successfully!")
     print("\nDemo Login Credentials:")
-    print("- Username: admin, Password: admin123")
     print("- Username: alice, Password: password123")
     print("- Username: bob, Password: qwerty")
     print("- Username: charlie, Password: 123456")
     print("- Username: diana, Password: password")
     print("- Username: eve, Password: letmein")
     print("\nAdmin Panel Access:")
-    print("- Username: admin, Password: admin123")
     print("\nDemo Coupons:")
     print("- WELCOME10 (10% off)")
     print("- SAVE20 (20% off)")
