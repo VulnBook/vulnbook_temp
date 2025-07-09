@@ -17,7 +17,7 @@ Requirements:
 
 import os
 import sys
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from werkzeug.security import generate_password_hash
 
 # Add the app directory to the Python path
@@ -25,6 +25,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'app'))
 
 from app import create_app
 from app.db import db
+from app.db import create_app
 from app.models import (
     User, Post, Comment, PostImage, PostLike, CommentLike, 
     Report, FriendRequest, Notification, Friendship, 
@@ -37,6 +38,43 @@ def create_demo_data():
     print("Creating demo users...")
     
     # Create demo users with intentionally vulnerable plain text passwords
+    # Remove existing users with the same usernames to avoid UNIQUE constraint errors
+    usernames = ['alice', 'bob', 'charlie', 'diana', 'eve']
+    for uname in usernames:
+        existing = User.query.filter_by(username=uname).first()
+        if existing:
+            # Remove related friendships first to avoid NOT NULL constraint errors
+            Friendship.query.filter((Friendship.user_id == existing.id) | (Friendship.friend_id == existing.id)).delete(synchronize_session=False)
+            # Remove related marketplace items
+            MarketplaceItem.query.filter_by(user_id=existing.id).delete(synchronize_session=False)
+            # Remove related posts and their dependencies
+            user_posts = Post.query.filter_by(user_id=existing.id).all()
+            for post in user_posts:
+                # Remove post likes
+                PostLike.query.filter_by(post_id=post.id).delete(synchronize_session=False)
+                # Remove post images
+                PostImage.query.filter_by(post_id=post.id).delete(synchronize_session=False)
+                # Remove comments and their likes
+                comments = Comment.query.filter_by(post_id=post.id).all()
+                for comment in comments:
+                    CommentLike.query.filter_by(comment_id=comment.id).delete(synchronize_session=False)
+                    db.session.delete(comment)
+                db.session.delete(post)
+            # Remove comments made by the user and their likes
+            user_comments = Comment.query.filter_by(user_id=existing.id).all()
+            for comment in user_comments:
+                CommentLike.query.filter_by(comment_id=comment.id).delete(synchronize_session=False)
+                db.session.delete(comment)
+            # Remove likes made by the user
+            PostLike.query.filter_by(user_id=existing.id).delete(synchronize_session=False)
+            CommentLike.query.filter_by(user_id=existing.id).delete(synchronize_session=False)
+            # Remove notifications, reports, friend requests
+            Notification.query.filter_by(user_id=existing.id).delete(synchronize_session=False)
+            Report.query.filter_by(user_id=existing.id).delete(synchronize_session=False)
+            FriendRequest.query.filter((FriendRequest.from_user_id == existing.id) | (FriendRequest.to_user_id == existing.id)).delete(synchronize_session=False)
+            db.session.delete(existing)
+    db.session.commit()
+
     users = [
         User(
             username='alice',
@@ -45,8 +83,8 @@ def create_demo_data():
             dob=datetime(1995, 5, 15).date(),
             password='password123',  # Intentionally vulnerable: plain text
             bio='Software developer who loves coding and coffee ☕',
-            image_url='static/uploads/alice.jpg',
-            created_at=datetime.utcnow()
+            image_url='/static/uploads/0ef067dd-073e-4c5f-8ce0-1e2f04a727e3.jpg',
+            created_at=datetime.now(timezone.utc)
         ),
         User(
             username='bob',
@@ -55,8 +93,8 @@ def create_demo_data():
             dob=datetime(1992, 8, 22).date(),
             password='qwerty',  # Intentionally vulnerable: weak password
             bio='Security researcher and bug bounty hunter 🔍',
-            image_url='static/uploads/bob.jpg',
-            created_at=datetime.utcnow()
+            image_url='/static/uploads/0ef067dd-073e-4c5f-8ce0-1e2f04a727e3.jpg',
+            created_at=datetime.now(timezone.utc)
         ),
         User(
             username='charlie',
@@ -65,8 +103,8 @@ def create_demo_data():
             dob=datetime(1998, 3, 10).date(),
             password='123456',  # Intentionally vulnerable: weak password
             bio='Web designer and UI/UX enthusiast 🎨',
-            image_url=None,
-            created_at=datetime.utcnow()
+            image_url='/static/uploads/0ef067dd-073e-4c5f-8ce0-1e2f04a727e3.jpg',
+            created_at=datetime.now(timezone.utc)
         ),
         User(
             username='diana',
@@ -75,8 +113,8 @@ def create_demo_data():
             dob=datetime(1994, 12, 5).date(),
             password='password',  # Intentionally vulnerable: common password
             bio='Data scientist working with machine learning 🤖',
-            image_url='static/uploads/diana.jpg',
-            created_at=datetime.utcnow()
+            image_url='/static/uploads/0ef067dd-073e-4c5f-8ce0-1e2f04a727e3.jpg',
+            created_at=datetime.now(timezone.utc)
         ),
         User(
             username='eve',
@@ -85,8 +123,8 @@ def create_demo_data():
             dob=datetime(2000, 7, 20).date(),
             password='letmein',  # Intentionally vulnerable: weak password
             bio='Cybersecurity student learning ethical hacking 🛡️',
-            image_url=None,
-            created_at=datetime.utcnow()
+            image_url='/static/uploads/0ef067dd-073e-4c5f-8ce0-1e2f04a727e3.jpg',
+            created_at=datetime.now(timezone.utc)
         )
     ]
     
@@ -99,14 +137,10 @@ def create_demo_data():
     # Create friendships
     print("Creating friendships...")
     friendships = [
-        Friendship(user_id=1, friend_id=2),  # admin <-> alice
-        Friendship(user_id=2, friend_id=1),
-        Friendship(user_id=2, friend_id=3),  # alice <-> bob
-        Friendship(user_id=3, friend_id=2),
-        Friendship(user_id=3, friend_id=4),  # bob <-> charlie
-        Friendship(user_id=4, friend_id=3),
-        Friendship(user_id=4, friend_id=5),  # charlie <-> diana
-        Friendship(user_id=5, friend_id=4),
+        Friendship(user_id=1, friend_id=2),  # alice <-> bob
+        Friendship(user_id=2, friend_id=3),  # bob <-> charlie
+        Friendship(user_id=3, friend_id=4),  # charlie <-> diana
+        Friendship(user_id=4, friend_id=5),  # diana <-> eve
     ]
     
     for friendship in friendships:
@@ -121,47 +155,37 @@ def create_demo_data():
         Post(
             user_id=1,
             content='Welcome to VulnBook! 🎉 This is a vulnerable social networking app for security testing. #vulnbook #security',
-            timestamp=datetime.utcnow() - timedelta(days=5)
+            created_at=datetime.now(timezone.utc) - timedelta(days=5)
         ),
         Post(
             user_id=2,
             content='Just deployed my new Flask application! Love working with Python 🐍 #python #flask #webdev',
-            timestamp=datetime.utcnow() - timedelta(days=4)
+            created_at=datetime.now(timezone.utc) - timedelta(days=4)
         ),
         Post(
             user_id=3,
             content='Found an interesting SQL injection vulnerability today. Always validate your inputs! #sqli #security #bugbounty',
-            timestamp=datetime.utcnow() - timedelta(days=3)
-            
+            created_at=datetime.now(timezone.utc) - timedelta(days=3)
         ),
         Post(
             user_id=4,
             content='Working on a new UI design for mobile apps. User experience is everything! 📱 #ui #ux #design',
-            timestamp=datetime.utcnow() - timedelta(days=2)
-            
+            created_at=datetime.now(timezone.utc) - timedelta(days=2)
         ),
         Post(
             user_id=5,
             content='Training a neural network to detect malware. Machine learning + cybersecurity = ❤️ #ml #ai #cybersecurity',
-            timestamp=datetime.utcnow() - timedelta(days=1)
-            
-        ),
-        Post(
-            user_id=6,
-            content='Learning about XSS vulnerabilities. <script>alert("XSS")</script> #xss #learning #security',
-            timestamp=datetime.utcnow() - timedelta(hours=12)
-            
+            created_at=datetime.now(timezone.utc) - timedelta(days=1)
         ),
         Post(
             user_id=2,
             content='Coffee break! ☕ Nothing beats a good cup of coffee while coding.',
-            timestamp=datetime.utcnow() - timedelta(hours=6)
-            
+            created_at=datetime.now(timezone.utc) - timedelta(hours=6)
         ),
         Post(
             user_id=3,
             content='Check out this awesome security tool I found: https://github.com/example/security-tool #tools #security',
-            timestamp=datetime.utcnow() - timedelta(hours=3)
+            created_at=datetime.now(timezone.utc) - timedelta(hours=3)
         )
     ]
     
@@ -178,37 +202,31 @@ def create_demo_data():
             post_id=1,
             user_id=2,
             content='Great initiative! Looking forward to testing this.',
-            timestamp=datetime.utcnow() - timedelta(days=4, hours=23)
+            created_at=datetime.now(timezone.utc) - timedelta(days=4, hours=23)
         ),
         Comment(
             post_id=1,
             user_id=3,
             content='Perfect for my security research! Thanks for sharing.',
-            timestamp=datetime.utcnow() - timedelta(days=4, hours=22)
+            created_at=datetime.now(timezone.utc) - timedelta(days=4, hours=22)
         ),
         Comment(
             post_id=2,
             user_id=1,
             content='Flask is awesome! Keep up the good work.',
-            timestamp=datetime.utcnow() - timedelta(days=3, hours=23)
+            created_at=datetime.now(timezone.utc) - timedelta(days=3, hours=23)
         ),
         Comment(
             post_id=3,
             user_id=4,
             content='Very informative! Input validation is crucial.',
-            timestamp=datetime.utcnow() - timedelta(days=2, hours=23)
+            created_at=datetime.now(timezone.utc) - timedelta(days=2, hours=23)
         ),
         Comment(
             post_id=4,
             user_id=5,
             content='Love the design! User experience is indeed everything.',
-            timestamp=datetime.utcnow() - timedelta(days=1, hours=23)
-        ),
-        Comment(
-            post_id=5,
-            user_id=6,
-            content='Machine learning in cybersecurity is fascinating!',
-            timestamp=datetime.utcnow() - timedelta(hours=23)
+            created_at=datetime.now(timezone.utc) - timedelta(days=1, hours=23)
         )
     ]
     
@@ -220,24 +238,25 @@ def create_demo_data():
     
     # Create demo likes
     print("Creating demo likes...")
+    # Remove all existing likes to avoid UNIQUE constraint errors
+    PostLike.query.delete()
+    db.session.commit()
     likes = [
-        PostLike(post_id=1, user_id=2),
-        PostLike(post_id=1, user_id=3),
-        PostLike(post_id=1, user_id=4),
-        PostLike(post_id=2, user_id=1),
-        PostLike(post_id=2, user_id=3),
-        PostLike(post_id=3, user_id=1),
-        PostLike(post_id=3, user_id=4),
-        PostLike(post_id=4, user_id=5),
-        PostLike(post_id=5, user_id=6),
-        PostLike(post_id=6, user_id=2),
-        PostLike(post_id=7, user_id=3),
-        PostLike(post_id=8, user_id=4),
-        # Intentionally vulnerable: Allow multiple likes from same user
-        PostLike(post_id=1, user_id=2),  # Duplicate like
-        PostLike(post_id=2, user_id=1),  # Duplicate like
+        PostLike(post_id=1, user_id=2, created_at=datetime.now(timezone.utc)),
+        PostLike(post_id=1, user_id=3, created_at=datetime.now(timezone.utc)),
+        PostLike(post_id=1, user_id=4, created_at=datetime.now(timezone.utc)),
+        PostLike(post_id=2, user_id=1, created_at=datetime.now(timezone.utc)),
+        PostLike(post_id=2, user_id=3, created_at=datetime.now(timezone.utc)),
+        PostLike(post_id=3, user_id=1, created_at=datetime.now(timezone.utc)),
+        PostLike(post_id=3, user_id=4, created_at=datetime.now(timezone.utc)),
+        PostLike(post_id=4, user_id=5, created_at=datetime.now(timezone.utc)),
+        PostLike(post_id=5, user_id=2, created_at=datetime.now(timezone.utc)),
+        PostLike(post_id=6, user_id=3, created_at=datetime.now(timezone.utc)),
+        PostLike(post_id=7, user_id=4, created_at=datetime.now(timezone.utc)),
+        # Intentionally vulnerable: Allow multiple likes from same user (but only one will be inserted due to UNIQUE constraint)
+        # PostLike(post_id=1, user_id=2),  # Duplicate like
+        # PostLike(post_id=2, user_id=1),  # Duplicate like
     ]
-    
     for like in likes:
         db.session.add(like)
     
@@ -280,14 +299,6 @@ def create_demo_data():
             approved=True
         ),
         MarketplaceItem(
-            user_id=6,
-            description='Cybersecurity Study Guide',
-            price=24.99,
-            image_url='static/uploads/cyber_guide.jpg',
-            review='Complete study guide for cybersecurity certification exams.',
-            approved=False  # Pending approval
-        ),
-        MarketplaceItem(
             user_id=1,
             description='Web Development Bootcamp',
             price=99.99,
@@ -305,41 +316,51 @@ def create_demo_data():
     
     # Create demo coupons
     print("Creating demo coupons...")
+    # Remove existing coupons with the same codes to avoid UNIQUE constraint errors
+    coupon_codes = ['WELCOME10', 'SAVE20', 'STUDENT50', 'EXPIRED', 'FREEBIE']
+    for code in coupon_codes:
+        Coupon.query.filter_by(coupon_code=code).delete(synchronize_session=False)
+    db.session.commit()
     coupons = [
         Coupon(
             coupon_code='WELCOME10',
             percentage=10,
             max_discount=10.0,
             price=5.0,
-            expiry_date=datetime.utcnow() + timedelta(days=30)
+            expiry_date=datetime.now(timezone.utc) + timedelta(days=30),
+            created_at=datetime.now(timezone.utc)
         ),
         Coupon(
             coupon_code='SAVE20',
             percentage=20,
             max_discount=20.0,
             price=8.0,
-            expiry_date=datetime.utcnow() + timedelta(days=15)
+            expiry_date=datetime.now(timezone.utc) + timedelta(days=15),
+            created_at=datetime.now(timezone.utc)
         ),
         Coupon(
             coupon_code='STUDENT50',
             percentage=50,
             max_discount=50.0,
             price=15.0,
-            expiry_date=datetime.utcnow() + timedelta(days=7)
+            expiry_date=datetime.now(timezone.utc) + timedelta(days=7),
+            created_at=datetime.now(timezone.utc)
         ),
         Coupon(
             coupon_code='EXPIRED',
             percentage=25,
             max_discount=25.0,
             price=10.0,
-            expiry_date=datetime.utcnow() - timedelta(days=1)
+            expiry_date=datetime.now(timezone.utc) - timedelta(days=1),
+            created_at=datetime.now(timezone.utc)
         ),
         Coupon(
             coupon_code='FREEBIE',
             percentage=100,
             max_discount=1000.0,
             price=0.0,
-            expiry_date=datetime.utcnow() + timedelta(days=365)
+            expiry_date=datetime.now(timezone.utc) + timedelta(days=365),
+            created_at=datetime.now(timezone.utc)
         )
     ]
     
@@ -357,35 +378,28 @@ def create_demo_data():
             message='Welcome to VulnBook! Start by creating your first post.',
             link=None,
             is_read=False,
-            created_at=datetime.utcnow() - timedelta(days=5)
+            created_at=datetime.now(timezone.utc) - timedelta(days=5)
         ),
         Notification(
             user_id=3,
             message='You have a new friend request.',
             link=None,
             is_read=False,
-            created_at=datetime.utcnow() - timedelta(days=3)
+            created_at=datetime.now(timezone.utc) - timedelta(days=3)
         ),
         Notification(
             user_id=4,
             message='Someone liked your post!',
             link=None,
             is_read=False,
-            created_at=datetime.utcnow() - timedelta(days=2)
+            created_at=datetime.now(timezone.utc) - timedelta(days=2)
         ),
         Notification(
             user_id=5,
             message='Your marketplace item has been approved!',
             link=None,
             is_read=False,
-            created_at=datetime.utcnow() - timedelta(days=1)
-        ),
-        Notification(
-            user_id=6,
-            message='Your marketplace item is pending approval.',
-            link=None,
-            is_read=False,
-            created_at=datetime.utcnow() - timedelta(hours=12)
+            created_at=datetime.now(timezone.utc) - timedelta(days=1)
         )
     ]
     
@@ -412,10 +426,10 @@ def main():
     """Main function to set up the database"""
     print("VulnBook Database Setup")
     print("=" * 50)
-    
-    # Create Flask app context
+
+    # Create Flask app context using the same config as in db.py
     app = create_app()
-    
+
     with app.app_context():
         # Ask user what they want to do
         print("\nWhat would you like to do?")

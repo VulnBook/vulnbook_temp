@@ -676,3 +676,16 @@ def checkout():
         flash(f'Payment successful! Thanks for ordering. You paid ${final_total:.2f}.', 'success')
         return redirect(url_for('main.marketplace'))
     return render_template('checkout.html', items=items, total=total, discount=discount, applied_coupons=applied_coupons)
+
+@bp.route('/unfriend/<int:user_id>', methods=['POST'])
+def unfriend(user_id):
+    if 'token' not in session:
+        return redirect(url_for('main.login'))
+    decoded = jwt.decode(session['token'], JWT_SECRET, algorithms=['HS256'])
+    current_user_id = decoded['user_id']
+    # Remove both directions of friendship
+    Friendship.query.filter_by(user_id=current_user_id, friend_id=user_id).delete()
+    Friendship.query.filter_by(user_id=user_id, friend_id=current_user_id).delete()
+    db.session.commit()
+    flash('Unfriended successfully.', 'info')
+    return redirect(request.referrer or url_for('main.friends'))
