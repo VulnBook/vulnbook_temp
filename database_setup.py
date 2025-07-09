@@ -39,16 +39,6 @@ def create_demo_data():
     # Create demo users with intentionally vulnerable plain text passwords
     users = [
         User(
-            username='admin',
-            firstname='Admin',
-            lastname='User',
-            dob=datetime(1990, 1, 1).date(),
-            password='admin123',  # Intentionally vulnerable: plain text
-            bio='System Administrator',
-            image_url='static/uploads/admin.jpg',
-            created_at=datetime.utcnow()
-        ),
-        User(
             username='alice',
             firstname='Alice',
             lastname='Smith',
