@@ -7,10 +7,12 @@
             <tr>
                 <th>ID</th>
                 <th>Reporter</th>
+                <th>Report Against</th>
                 <th>Post ID</th>
                 <th>Comment ID</th>
                 <th>Reason</th>
                 <th>Created At</th>
+                <th>Actions</th>
             </tr>
         </thead>
         <tbody>
@@ -24,10 +26,33 @@
                         Unknown
                     {% endif %}
                 </td>
+                <td>
+                    {% if report.post and report.post.user %}
+                        <a href="{{ url_for('main.profile', id=report.post.user.id) }}">@{{ report.post.user.username }}</a>
+                    {% elif report.comment and report.comment.user %}
+                        <a href="{{ url_for('main.profile', id=report.comment.user.id) }}">@{{ report.comment.user.username }}</a>
+                    {% else %}
+                        Unknown
+                    {% endif %}
+                </td>
                 <td>{% if report.post_id %}<a href="{{ url_for('main.single_post', post_id=report.post_id) }}">{{ report.post_id }}</a>{% endif %}</td>
                 <td>{% if report.comment_id %}{{ report.comment_id }}{% endif %}</td>
                 <td>{{ report.reason }}</td>
                 <td>{{ report.created_at }}</td>
+                <td>
+                    {% if report.post and report.post.user %}
+                        <form method="POST" action="{{ url_for('main.admin_delete_user', user_id=report.post.user.id) }}" style="display:inline;">
+                            <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure you want to delete this user?');">Delete User</button>
+                        </form>
+                    {% elif report.comment and report.comment.user %}
+                        <form method="POST" action="{{ url_for('main.admin_delete_user', user_id=report.comment.user.id) }}" style="display:inline;">
+                            <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure you want to delete this user?');">Delete User</button>
+                        </form>
+                    {% endif %}
+                    <form method="POST" action="{{ url_for('main.admin_delete_report', report_id=report.id) }}" style="display:inline;">
+                        <button type="submit" class="btn btn-success btn-sm">Delete Report</button>
+                    </form>
+                </td>
             </tr>
             {% endfor %}
         </tbody>

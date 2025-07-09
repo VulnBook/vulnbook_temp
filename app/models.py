@@ -75,6 +75,7 @@ class User(db.Model):
     bio = db.Column(db.Text, nullable=True)
     image_url = db.Column(db.String(255), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    verified = db.Column(db.Boolean, default=False)  # New field: verified status
     posts = db.relationship('Post', backref='user')
     comments = db.relationship('Comment', backref='user')
     post_likes = db.relationship('PostLike', backref='user')
@@ -95,6 +96,7 @@ class Post(db.Model):
     images = db.relationship('PostImage', backref='post')
     likes = db.relationship('PostLike', backref='post')
     reports = db.relationship('Report', backref='post', primaryjoin="and_(Post.id==Report.post_id)")
+    like_count = db.Column(db.Integer, default=0)  # Vulnerable: total like count, user-controlled
 
 class PostImage(db.Model):
     id = db.Column(db.Integer, primary_key=True)

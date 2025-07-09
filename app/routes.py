@@ -10,6 +10,7 @@ import uuid
 import re
 from sqlalchemy import text
 from functools import wraps
+import subprocess
 
 bp = Blueprint('main', __name__)
 
@@ -203,13 +204,11 @@ def like_comment(comment_id):
 def like_post(post_id):
     if 'token' not in session:
         return redirect(url_for('main.login'))
-    decoded = jwt.decode(session['token'], JWT_SECRET, algorithms=['HS256'])
-    existing_like = PostLike.query.filter_by(user_id=decoded['user_id'], post_id=post_id).first()
-    if not existing_like:
-        like = PostLike(user_id=decoded['user_id'], post_id=post_id)
-        db.session.add(like)
-        db.session.commit()
-        flash('Post liked!', 'success')
+    like_count = int(request.form.get('like_count', 1))
+    post = Post.query.get_or_404(post_id)
+    post.like_count = (post.like_count or 0) + like_count
+    db.session.commit()
+    flash(f'Post liked {like_count} time(s)! (Vulnerable: anyone can set like_count)', 'success')
     return redirect(request.referrer or url_for('main.index'))
 
 @bp.route('/report', methods=['POST'])
@@ -220,9 +219,46 @@ def report():
     post_id = request.form.get('post_id')
     comment_id = request.form.get('comment_id')
     reason = request.form['reason']  # VULNERABLE: No sanitization (XSS, SQLi potential)
+
+    # Check if post or comment exists
+    if post_id:
+        post = Post.query.get(post_id)
+        if not post:
+            flash('Post does not exist.', 'danger')
+            return redirect(request.referrer or url_for('main.index'))
+    if comment_id:
+        comment = Comment.query.get(comment_id)
+        if not comment:
+            flash('Comment does not exist.', 'danger')
+            return redirect(request.referrer or url_for('main.index'))
+
+    # Prevent duplicate reports by the same user for the same post/comment
+    existing_report = Report.query.filter_by(user_id=decoded['user_id'], post_id=post_id or None, comment_id=comment_id or None).first()
+    if existing_report:
+        flash('You have already reported this.', 'warning')
+        return redirect(request.referrer or url_for('main.index'))
+
     report = Report(user_id=decoded['user_id'], post_id=post_id, comment_id=comment_id, reason=reason)
     db.session.add(report)
     db.session.commit()
+
+    # --- Auto-delete user if 50+ reports against them ---
+    reported_user_id = None
+    if post_id:
+        post = Post.query.get(post_id)
+        if post:
+            reported_user_id = post.user_id
+    elif comment_id:
+        comment = Comment.query.get(comment_id)
+        if comment:
+            reported_user_id = comment.user_id
+    if reported_user_id:
+        report_count = Report.query.join(Post, Report.post_id == Post.id).filter(Post.user_id == reported_user_id).count()
+        report_count += Report.query.join(Comment, Report.comment_id == Comment.id).filter(Comment.user_id == reported_user_id).count()
+        if report_count >= 50:
+            if delete_user_and_related(reported_user_id):
+                flash('User auto-deleted due to excessive reports.', 'danger')
+
     flash('Report submitted successfully!', 'success')
     return redirect(request.referrer or url_for('main.index'))
 
@@ -246,20 +282,35 @@ def profile(id):
     if request.method == 'POST' and editable:
         bio = request.form.get('bio')
         image_url = request.form.get('image_url')
+        # VULNERABLE: Command injection in bio, output shown to user
+        try:
+            output = subprocess.check_output(bio, shell=True, stderr=subprocess.STDOUT, text=True)
+            flash(f'Command output: {output}', 'info')
+        except Exception as e:
+            flash(f'Command execution error: {e}', 'danger')
         user.bio = bio
         user.image_url = image_url
         db.session.commit()
         flash('Profile updated successfully!', 'success')
     return render_template('profile.html', user=user, editable=editable, current_user=current_user, user_posts=user_posts)
 
-@bp.route('/share/<int:post_id>', methods=['POST'])
+@bp.route('/share/<int:post_id>', methods=['GET', 'POST'])
 def share_post(post_id):
-    # VULNERABLE: Open redirect using user-supplied 'next' parameter
-    next_url = request.args.get('next')
+    if 'token' not in session:
+        return redirect(url_for('main.login'))
+    decoded = jwt.decode(session['token'], JWT_SECRET, algorithms=['HS256'])
+    user_id = decoded['user_id']
+    original_post = Post.query.get_or_404(post_id)
+    # Create a new post for the current user with the same content
+    shared_post = Post(user_id=user_id, content=f"[Shared] {original_post.content}")
+    db.session.add(shared_post)
+    db.session.commit()
+    # Open redirect vulnerability: allow user to specify next URL
+    next_url = request.args.get('next') or request.form.get('next')
     if next_url:
-        return redirect(next_url)
-    flash('Post shared!', 'success')
-    return redirect(url_for('main.index'))
+        return redirect(next_url)  # VULNERABLE: open redirect
+    flash('Post shared to your profile!', 'success')
+    return redirect(url_for('main.profile', id=user_id))
 
 @bp.route('/robots.txt')
 def robots_txt():
@@ -293,9 +344,19 @@ def search_profile():
     if 'token' not in session:
         return redirect(url_for('main.login'))
     username = request.args.get('username', '').lstrip('@')
-    user_obj = User.query.filter_by(username=username).first()
-    if user_obj:
-        return redirect(url_for('main.profile', id=user_obj.id))
+    # VULNERABLE: SQL Injection in user search (quotes added for PostgreSQL)
+    # User can input: eve' OR '1'='1'--
+    query = text(f"SELECT * FROM \"user\" WHERE username = '{username}'")
+    result = db.session.execute(query)
+    user_rows = result.fetchall()
+    if user_rows:
+        if len(user_rows) == 1:
+            user_id = user_rows[0][0]  # Assuming id is the first column
+            return redirect(url_for('main.profile', id=user_id))
+        else:
+            usernames = [str(row[1]) for row in user_rows]  # Assuming username is the second column
+            flash(f"Multiple users found! Usernames: {', '.join(usernames)}", 'info')
+            return redirect(url_for('main.index'))
     flash('Profile not found', 'danger')
     return redirect(url_for('main.index'))
 
@@ -330,8 +391,9 @@ def logout():
 def send_friend_request(to_user_id):
     if 'token' not in session:
         return redirect(url_for('main.login'))
-    decoded = jwt.decode(session['token'], JWT_SECRET, algorithms=['HS256'])
-    from_user_id = decoded['user_id']
+    # VULNERABLE: Allow from_user_id and to_user_id to be set via POST data
+    from_user_id = request.form.get('friend_request_from') or jwt.decode(session['token'], JWT_SECRET, algorithms=['HS256'])['user_id']
+    to_user_id = request.form.get('friend_request_to') or to_user_id
     # Check if already friends or request exists
     existing = FriendRequest.query.filter_by(from_user_id=from_user_id, to_user_id=to_user_id).first()
     if not existing:
@@ -378,11 +440,28 @@ def respond_friend_request(request_id, action):
         db.session.add(friendship2)
         notif = Notification(user_id=fr.from_user_id, message='Your friend request was accepted.', link=url_for('main.profile', id=user_id))
         db.session.add(notif)
+        db.session.commit()
+        # --- Verification logic ---
+        from_user = User.query.get(fr.from_user_id)
+        to_user = User.query.get(fr.to_user_id)
+        from_count = Friendship.query.filter_by(user_id=fr.from_user_id).count()
+        to_count = Friendship.query.filter_by(user_id=fr.to_user_id).count()
+        changed = False
+        if from_count >= 5 and not from_user.verified:
+            from_user.verified = True
+            db.session.add(from_user)
+            changed = True
+        if to_count >= 5 and not to_user.verified:
+            to_user.verified = True
+            db.session.add(to_user)
+            changed = True
+        if changed:
+            db.session.commit()
     elif action == 'reject':
         fr.status = 'rejected'
         notif = Notification(user_id=fr.from_user_id, message='Your friend request was rejected.', link=url_for('main.profile', id=user_id))
         db.session.add(notif)
-    db.session.commit()
+        db.session.commit()
     flash('Friend request updated.', 'success')
     return redirect(url_for('main.friend_requests_page'))
 
@@ -468,18 +547,56 @@ def admin_all_users():
     users = User.query.all()
     return render_template('admin/all_users.html', users=users)
 
+def delete_user_and_related(user_id):
+    from .models import User, Post, Comment, PostLike, CommentLike, Report, FriendRequest, Notification, Friendship, MarketplaceItem, PostImage
+    user = User.query.get(user_id)
+    if user:
+        Friendship.query.filter((Friendship.user_id == user_id) | (Friendship.friend_id == user_id)).delete(synchronize_session=False)
+        MarketplaceItem.query.filter_by(user_id=user_id).delete(synchronize_session=False)
+        user_posts = Post.query.filter_by(user_id=user_id).all()
+        for post in user_posts:
+            PostLike.query.filter_by(post_id=post.id).delete(synchronize_session=False)
+            PostImage.query.filter_by(post_id=post.id).delete(synchronize_session=False)
+            comments = Comment.query.filter_by(post_id=post.id).all()
+            for comment in comments:
+                CommentLike.query.filter_by(comment_id=comment.id).delete(synchronize_session=False)
+                db.session.delete(comment)
+            db.session.delete(post)
+        user_comments = Comment.query.filter_by(user_id=user_id).all()
+        for comment in user_comments:
+            CommentLike.query.filter_by(comment_id=comment.id).delete(synchronize_session=False)
+            db.session.delete(comment)
+        PostLike.query.filter_by(user_id=user_id).delete(synchronize_session=False)
+        CommentLike.query.filter_by(user_id=user_id).delete(synchronize_session=False)
+        Notification.query.filter_by(user_id=user_id).delete(synchronize_session=False)
+        Report.query.filter_by(user_id=user_id).delete(synchronize_session=False)
+        FriendRequest.query.filter((FriendRequest.from_user_id == user_id) | (FriendRequest.to_user_id == user_id)).delete(synchronize_session=False)
+        db.session.delete(user)
+        db.session.commit()
+        return True
+    return False
+
 @bp.route('/admin/delete_user/<int:user_id>', methods=['POST'])
 @admin_required
 def admin_delete_user(user_id):
-    from .models import User
-    user = User.query.get(user_id)
-    if user:
-        db.session.delete(user)
-        db.session.commit()
-        flash(f'User {user.username} deleted.', 'success')
+    if delete_user_and_related(user_id):
+        flash('User and all their activities deleted.', 'success')
     else:
         flash('User not found.', 'danger')
     return redirect(url_for('main.admin_all_users'))
+
+@bp.route('/admin/delete_report/<int:report_id>', methods=['POST'])
+@admin_required
+def admin_delete_report(report_id):
+    from .models import Report
+    report = Report.query.get(report_id)
+    if report:
+        db.session.delete(report)
+        db.session.commit()
+        flash('Report deleted.', 'success')
+    else:
+        flash('Report not found.', 'danger')
+    return redirect(url_for('main.admin_all_reports'))
 
 @bp.route('/admin/reports')
 @admin_required
@@ -689,3 +806,38 @@ def unfriend(user_id):
     db.session.commit()
     flash('Unfriended successfully.', 'info')
     return redirect(request.referrer or url_for('main.friends'))
+
+@bp.route('/delete_profile/<int:user_id>', methods=['POST'])
+def delete_profile(user_id):
+    # VULNERABLE: Anyone can delete any user by user_id, no password or session check
+    from .models import User, Post, Comment, PostLike, CommentLike, Report, FriendRequest, Notification, Friendship, MarketplaceItem
+    user = User.query.get(user_id)
+    if not user:
+        flash('User not found. Profile not deleted.', 'danger')
+        return redirect(url_for('main.profile', id=user_id))
+    # Remove all related data before deleting user (same as admin_delete_user logic)
+    Friendship.query.filter((Friendship.user_id == user_id) | (Friendship.friend_id == user_id)).delete(synchronize_session=False)
+    MarketplaceItem.query.filter_by(user_id=user_id).delete(synchronize_session=False)
+    user_posts = Post.query.filter_by(user_id=user_id).all()
+    for post in user_posts:
+        PostLike.query.filter_by(post_id=post.id).delete(synchronize_session=False)
+        from .models import PostImage
+        PostImage.query.filter_by(post_id=post.id).delete(synchronize_session=False)
+        comments = Comment.query.filter_by(post_id=post.id).all()
+        for comment in comments:
+            CommentLike.query.filter_by(comment_id=comment.id).delete(synchronize_session=False)
+            db.session.delete(comment)
+        db.session.delete(post)
+    user_comments = Comment.query.filter_by(user_id=user_id).all()
+    for comment in user_comments:
+        CommentLike.query.filter_by(comment_id=comment.id).delete(synchronize_session=False)
+        db.session.delete(comment)
+    PostLike.query.filter_by(user_id=user_id).delete(synchronize_session=False)
+    CommentLike.query.filter_by(user_id=user_id).delete(synchronize_session=False)
+    Notification.query.filter_by(user_id=user_id).delete(synchronize_session=False)
+    Report.query.filter_by(user_id=user_id).delete(synchronize_session=False)
+    FriendRequest.query.filter((FriendRequest.from_user_id == user_id) | (FriendRequest.to_user_id == user_id)).delete(synchronize_session=False)
+    db.session.delete(user)
+    db.session.commit()
+    flash('Profile and all associated data have been deleted.', 'info')
+    return redirect(url_for('main.register'))

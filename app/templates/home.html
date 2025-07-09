@@ -3,6 +3,11 @@
 <div class="row">
     <div class="col-12">
         <h2>Home</h2>
+        {% if not user.verified %}
+            <div class="alert alert-info" role="alert">
+                Make 5 or more friends to get verified!
+            </div>
+        {% endif %}
         <div class="card mb-3">
             <div class="card-body">
                 <h3>Create a Post</h3>
@@ -54,7 +59,7 @@
                     <p class="card-text"><small class="text-muted">{{ post.created_at }}</small></p>
                     <div class="d-flex gap-2">
                         <form method="POST" action="{{ url_for('main.like_post', post_id=post.id) }}" style="display:inline;">
-                            <button type="submit" class="btn btn-outline-primary btn-sm">Like ({{ post.likes | length }})</button>
+                            <button type="submit" class="btn btn-outline-primary btn-sm">Like ({{ post.like_count }})</button>
                         </form>
                         <a href="{{ url_for('main.single_post', post_id=post.id) }}" class="btn btn-outline-secondary btn-sm">Comment</a>
                         <form method="POST" action="{{ url_for('main.share_post', post_id=post.id) }}" style="display:inline;">
@@ -95,6 +100,9 @@
                         </div>
                         <form method="POST" action="{{ url_for('main.report') }}">
                             <div class="modal-body">
+                                <div class="alert alert-warning" role="alert">
+                                    You can't report more than 2 times in 24 hours.
+                                </div>
                                 <input type="hidden" name="post_id" value="{{ post.id }}">
                                 <div class="mb-3">
                                     <label for="reason" class="form-label">Reason for reporting</label>
