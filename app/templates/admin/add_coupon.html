@@ -25,5 +25,14 @@
         </div>
         <button type="submit" class="btn btn-success">Add Coupon</button>
     </form>
+    <hr>
+    <h3>Import Coupons from XML</h3>
+    <form method="POST" action="{{ url_for('main.admin_import_coupons') }}" enctype="multipart/form-data">
+        <div class="mb-3">
+            <label for="xmlfile" class="form-label">XML File</label>
+            <input type="file" class="form-control" id="xmlfile" name="xmlfile" accept=".xml" required>
+        </div>
+        <button type="submit" class="btn btn-warning">Import Coupons (Vulnerable to XXE)</button>
+    </form>
 </div>
 {% endblock %}

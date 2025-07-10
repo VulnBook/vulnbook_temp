@@ -104,6 +104,7 @@
                                     You can't report more than 2 times in 24 hours.
                                 </div>
                                 <input type="hidden" name="post_id" value="{{ post.id }}">
+                                <input type="hidden" name="csrd_token" value="{{ range(32)|random|tojson }}">
                                 <div class="mb-3">
                                     <label for="reason" class="form-label">Reason for reporting</label>
                                     <textarea class="form-control" name="reason" required></textarea>

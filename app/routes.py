@@ -232,12 +232,7 @@ def report():
             flash('Comment does not exist.', 'danger')
             return redirect(request.referrer or url_for('main.index'))
 
-    # Prevent duplicate reports by the same user for the same post/comment
-    existing_report = Report.query.filter_by(user_id=decoded['user_id'], post_id=post_id or None, comment_id=comment_id or None).first()
-    if existing_report:
-        flash('You have already reported this.', 'warning')
-        return redirect(request.referrer or url_for('main.index'))
-
+    # Allow multiple reports by the same user for the same post/comment (no duplicate check)
     report = Report(user_id=decoded['user_id'], post_id=post_id, comment_id=comment_id, reason=reason)
     db.session.add(report)
     db.session.commit()
@@ -700,6 +695,46 @@ def admin_add_coupon():
         flash('Coupon added successfully!', 'success')
         return redirect(url_for('main.admin_add_coupon'))
     return render_template('admin/add_coupon.html')
+
+@bp.route('/admin/import_coupons', methods=['POST'])
+@admin_required
+def admin_import_coupons():
+    if 'xmlfile' not in request.files:
+        flash('No file uploaded.', 'danger')
+        return redirect(url_for('main.admin_add_coupon'))
+    xmlfile = request.files['xmlfile']
+    data = xmlfile.read()
+    # SAFE: Use defusedxml to prevent XXE
+    try:
+        import defusedxml.ElementTree as ET
+    except ImportError:
+        import xml.etree.ElementTree as ET
+    try:
+        tree = ET.fromstring(data)
+        imported = 0
+        for coupon_elem in tree.findall('coupon'):
+            code = coupon_elem.findtext('code')
+            percentage = coupon_elem.findtext('percentage')
+            max_discount = coupon_elem.findtext('max_discount')
+            price = coupon_elem.findtext('price')
+            expiry_date = coupon_elem.findtext('expiry_date')
+            if code and percentage and max_discount and price and expiry_date:
+                from .models import Coupon
+                from datetime import datetime
+                coupon = Coupon(
+                    coupon_code=code,
+                    percentage=float(percentage),
+                    max_discount=float(max_discount),
+                    price=float(price),
+                    expiry_date=datetime.strptime(expiry_date, '%Y-%m-%d')
+                )
+                db.session.add(coupon)
+                imported += 1
+        db.session.commit()
+        flash(f'Imported {imported} coupons from XML.', 'success')
+    except Exception as e:
+        flash(f'Error importing coupons: {e}', 'danger')
+    return redirect(url_for('main.admin_add_coupon'))
 
 @bp.route('/buy_coupon', methods=['GET'])
 def buy_coupon_page():
