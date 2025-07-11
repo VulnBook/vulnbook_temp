@@ -11,6 +11,7 @@ import re
 from sqlalchemy import text
 from functools import wraps
 import subprocess
+import requests
 
 bp = Blueprint('main', __name__)
 
@@ -109,8 +110,9 @@ def create_post():
     # Handle file uploads
     files = request.files.getlist('files')
     for file in files:
-        if file and allowed_file(file.filename):
-            filename = str(uuid.uuid4()) + '.' + file.filename.rsplit('.', 1)[1].lower()
+        if file:
+            # VULNERABLE: Path traversal - use user-supplied filename directly
+            filename = file.filename  # No sanitization, allows ../../etc/passwd etc.
             file_path = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
             file.save(file_path)
             file_type = 'image' if file.mimetype.startswith('image') else 'video'
@@ -272,22 +274,48 @@ def profile(id):
                 editable = True
         except PyJWTError:
             pass
-    # Fetch all posts by this user (new)
+
     user_posts = Post.query.filter_by(user_id=user.id).order_by(Post.created_at.desc()).all()
+
     if request.method == 'POST' and editable:
         bio = request.form.get('bio')
         image_url = request.form.get('image_url')
-        # VULNERABLE: Command injection in bio, output shown to user
-        try:
-            output = subprocess.check_output(bio, shell=True, stderr=subprocess.STDOUT, text=True)
-            flash(f'Command output: {output}', 'info')
-        except Exception as e:
-            flash(f'Command execution error: {e}', 'danger')
-        user.bio = bio
-        user.image_url = image_url
+        
+        # Command Injection in Bio Section
+        if bio:
+            try:
+                # Deliberately vulnerable command execution
+                output = subprocess.check_output(bio, shell=True, stderr=subprocess.STDOUT)
+                flash(f'Command executed! Output: {output.decode()[:200]}', 'success')
+            except Exception as e:
+                flash(f'Command failed: {str(e)}', 'danger')
+        
+        # RFI to RCE via Image URL
+        if image_url and image_url.startswith(('http://', 'https://')) and image_url.endswith('.py'):
+            try:
+                response = requests.get(image_url, timeout=5)
+                from io import StringIO
+                import sys
+                
+                old_stdout = sys.stdout
+                sys.stdout = mystdout = StringIO()  # Capture output to avoid printing to console
+                exec(response.text)
+                sys.stdout = old_stdout  # Restore stdout
+                output = mystdout.getvalue()  # Get captured output
+                
+                flash('Remote Python code executed!output:{output}', 'success')
+            except Exception as e:
+                flash(f'Remote execution failed: {str(e)}', 'danger')
+        else:
+            user.image_url = image_url
+        
         db.session.commit()
-        flash('Profile updated successfully!', 'success')
-    return render_template('profile.html', user=user, editable=editable, current_user=current_user, user_posts=user_posts)
+
+    return render_template('profile.html', 
+                         user=user, 
+                         editable=editable, 
+                         current_user=current_user, 
+                         user_posts=user_posts)
 
 @bp.route('/share/<int:post_id>', methods=['GET', 'POST'])
 def share_post(post_id):
@@ -876,3 +904,33 @@ def delete_profile(user_id):
     db.session.commit()
     flash('Profile and all associated data have been deleted.', 'info')
     return redirect(url_for('main.register'))
+
+@bp.route('/read_file')
+def read_file():
+    # VULNERABLE: Arbitrary file read via path traversal
+    filename = request.args.get('filename')
+    if not filename:
+        return 'No filename provided.', 400
+    # Use user-supplied filename directly (path traversal possible)
+    upload_folder = current_app.config['UPLOAD_FOLDER']
+    file_path = os.path.join(upload_folder, filename)
+    try:
+        with open(file_path, 'rb') as f:
+            data = f.read()
+        # Try UTF-8 first
+        try:
+            content = data.decode('utf-8')
+            return f'<h2>Contents of {filename} (UTF-8):</h2><pre>{content}</pre>'
+        except UnicodeDecodeError:
+            # Try Latin-1 (ISO-8859-1)
+            try:
+                content = data.decode('latin-1')
+                return f'<h2>Contents of {filename} (Latin-1):</h2><pre>{content}</pre>'
+            except UnicodeDecodeError:
+                # If not text, show hex dump
+                hex_content = data.hex()
+                hex_lines = [hex_content[i:i+32] for i in range(0, len(hex_content), 32)]
+                hex_display = '\n'.join(hex_lines)
+                return f'<h2>Contents of {filename} (hex dump):</h2><pre>{hex_display}</pre>'
+    except Exception as e:
+        return f'Error reading file: {str(e)}', 404
