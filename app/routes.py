@@ -520,7 +520,7 @@ def create_marketplace_item():
         return redirect(url_for('main.login'))
     if request.method == 'POST':
         price = request.form['price']
-        description = request.form['description']  # VULNERABLE: No sanitization (XSS)
+        description = request.form['description']
         review = request.form.get('review')
         image = request.files.get('image')
         image_url = None
@@ -529,7 +529,20 @@ def create_marketplace_item():
             file_path = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
             image.save(file_path)
             image_url = f'static/uploads/{filename}'
-        item = MarketplaceItem(user_id=user.id, image_url=image_url, price=price, description=description, review=review, approved=False)
+        # --- SSTI Vulnerability: Render description as template before saving ---
+        from jinja2 import Template
+        try:
+            # VULNERABLE: Provide access to current app context and globals
+            template_globals = {
+                'config': current_app.config,
+                'request': request,
+                'session': session,
+                '__builtins__': __builtins__
+            }
+            rendered_description = Template(description).render(**template_globals)
+        except Exception as e:
+            rendered_description = description  # fallback if template fails
+        item = MarketplaceItem(user_id=user.id, image_url=image_url, price=price, description=rendered_description, review=review, approved=False)
         db.session.add(item)
         db.session.commit()
         flash('Item submitted for approval. It will be listed once approved by admin.', 'info')
