@@ -1,61 +1,109 @@
 {% extends 'base.html' %}
 {% block content %}
+<style>
+  .container {
+    max-width: 900px; /* increased width */
+  }
+  .table thead th {
+    background-color: #343a40;
+    color: #fff;
+    text-align: center;
+  }
+  .table tbody td {
+    vertical-align: middle;
+  }
+  .table tbody tr:hover {
+    background-color: #f1f3f5;
+  }
+  .table tbody td.id-col, 
+  .table thead th.id-col {
+    text-align: center;
+    width: 80px;
+  }
+  .table tbody td.action-col,
+  .table thead th.action-col {
+    text-align: center;
+    min-width: 180px; /* bigger width for buttons */
+    white-space: nowrap;
+  }
+  .container h2 {
+    margin-bottom: 1.5rem;
+    font-weight: 700;
+    color: #212529;
+  }
+  @media (max-width: 991px) {
+    .table-responsive {
+      overflow-x: auto;
+    }
+  }
+</style>
+
 <div class="container mt-4">
-    <h2>All Reports</h2>
-    <table class="table table-bordered table-striped mt-3">
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>Reporter</th>
-                <th>Report Against</th>
-                <th>Post ID</th>
-                <th>Comment ID</th>
-                <th>Reason</th>
-                <th>Created At</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for report in reports %}
-            <tr>
-                <td>{{ report.id }}</td>
-                <td>
-                    {% if report.user %}
-                        <a href="{{ url_for('main.profile', id=report.user.id) }}">@{{ report.user.username }}</a>
-                    {% else %}
-                        Unknown
-                    {% endif %}
-                </td>
-                <td>
-                    {% if report.post and report.post.user %}
-                        <a href="{{ url_for('main.profile', id=report.post.user.id) }}">@{{ report.post.user.username }}</a>
-                    {% elif report.comment and report.comment.user %}
-                        <a href="{{ url_for('main.profile', id=report.comment.user.id) }}">@{{ report.comment.user.username }}</a>
-                    {% else %}
-                        Unknown
-                    {% endif %}
-                </td>
-                <td>{% if report.post_id %}<a href="{{ url_for('main.single_post', post_id=report.post_id) }}">{{ report.post_id }}</a>{% endif %}</td>
-                <td>{% if report.comment_id %}{{ report.comment_id }}{% endif %}</td>
-                <td>{{ report.reason }}</td>
-                <td>{{ report.created_at }}</td>
-                <td>
-                    {% if report.post and report.post.user %}
-                        <form method="POST" action="{{ url_for('main.admin_delete_user', user_id=report.post.user.id) }}" style="display:inline;">
-                            <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure you want to delete this user?');">Delete User</button>
-                        </form>
-                    {% elif report.comment and report.comment.user %}
-                        <form method="POST" action="{{ url_for('main.admin_delete_user', user_id=report.comment.user.id) }}" style="display:inline;">
-                            <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure you want to delete this user?');">Delete User</button>
-                        </form>
-                    {% endif %}
-                    <form method="POST" action="{{ url_for('main.admin_delete_report', report_id=report.id) }}" style="display:inline;">
-                        <button type="submit" class="btn btn-success btn-sm">Delete Report</button>
-                    </form>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
+  <h2>All Reports</h2>
+  <div class="table-responsive">
+    <table class="table table-bordered table-striped">
+      <thead>
+        <tr>
+          <th class="id-col">ID</th>
+          <th>Reporter</th>
+          <th>Report Against</th>
+          <th>Post ID</th>
+          <th>Comment ID</th>
+          <th>Reason</th>
+          <th>Created At</th>
+          <th class="action-col">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for report in reports %}
+        <tr>
+          <td class="id-col">{{ report.id }}</td>
+          <td>
+            {% if report.user %}
+              <a href="{{ url_for('main.profile', id=report.user.id) }}">@{{ report.user.username }}</a>
+            {% else %}
+              Unknown
+            {% endif %}
+          </td>
+          <td>
+            {% if report.post and report.post.user %}
+              <a href="{{ url_for('main.profile', id=report.post.user.id) }}">@{{ report.post.user.username }}</a>
+            {% elif report.comment and report.comment.user %}
+              <a href="{{ url_for('main.profile', id=report.comment.user.id) }}">@{{ report.comment.user.username }}</a>
+            {% else %}
+              Unknown
+            {% endif %}
+          </td>
+          <td class="id-col">{% if report.post_id %}<a href="{{ url_for('main.single_post', post_id=report.post_id) }}">{{ report.post_id }}</a>{% endif %}</td>
+          <td class="id-col">{% if report.comment_id %}{{ report.comment_id }}{% endif %}</td>
+          <td>{{ report.reason }}</td>
+          <td>{{ report.created_at }}</td>
+          <td class="action-col">
+            {% if report.post and report.post.user %}
+              <form method="POST" action="{{ url_for('main.admin_delete_user', user_id=report.post.user.id) }}" style="display:inline;">
+                <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure you want to delete this user?');">Delete User</button>
+              </form>
+            {% elif report.comment and report.comment.user %}
+              <form method="POST" action="{{ url_for('main.admin_delete_user', user_id=report.comment.user.id) }}" style="display:inline;">
+                <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure you want to delete this user?');">Delete User</button>
+              </form>
+            {% endif %}
+            <form method="POST" action="{{ url_for('main.admin_delete_report', report_id=report.id) }}" style="display:inline;">
+              <button type="submit" class="btn btn-success btn-sm">Delete Report</button>
+            </form>
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="8" class="text-center">No reports found.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
     </table>
+  </div>
+
+  <div class="mt-4">
+    <a href="/admin" class="btn btn-secondary w-100">Back to Home</a>
+  </div>
 </div>
 {% endblock %}

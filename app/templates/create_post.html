@@ -1,18 +1,40 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="row justify-content-center">
+<style>
+  body {
+    background-color: #F2F4F7;
+    color: #000;
+  }
+  .post-form-container {
+    background: #fff;
+    padding: 2rem;
+    border-radius: 0.5rem;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.06);
+    margin-top: 2rem;
+  }
+  textarea {
+    resize: none;
+  }
+</style>
+
+<div class="container">
+  <div class="row justify-content-center">
     <div class="col-12 col-md-8">
-        <h2>Create a Post</h2>
+      <div class="post-form-container">
+        <h2 class="mb-4">Create a Post</h2>
         <form method="POST" action="{{ url_for('main.create_post') }}" enctype="multipart/form-data">
-            <div class="mb-3">
-                <textarea class="form-control" name="content" placeholder="Write a post..." required></textarea>
-            </div>
-            <div class="mb-3">
-                <label for="files" class="form-label">Upload Images/Videos</label>
-                <input type="file" class="form-control" id="files" name="files" multiple accept="image/*,video/*">
-            </div>
-            <button type="submit" class="btn btn-primary">Post</button>
+          <div class="mb-3">
+            <textarea class="form-control" name="content" rows="4" placeholder="What's on your mind?" required></textarea>
+          </div>
+          <div class="mb-3">
+            <label for="files" class="form-label">Upload Images/Videos</label>
+            <input type="file" class="form-control" id="files" name="files" multiple accept="image/*,video/*">
+            <div class="form-text">You can select multiple files (images or videos).</div>
+          </div>
+          <button type="submit" class="btn btn-primary">Post</button>
         </form>
+      </div>
     </div>
+  </div>
 </div>
 {% endblock %}

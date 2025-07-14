@@ -1,8 +1,78 @@
 {% extends "base.html" %}
 {% block content %}
+<style>
+    body {
+        background: #F2F4F7;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #000;
+    }
+
+    .login-container {
+        background-color: #ffffff;
+        padding: 30px;
+        border-radius: 12px;
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+    }
+
+    .login-container h2 {
+        text-align: center;
+        margin-bottom: 25px;
+        color: #000;
+    }
+
+    .form-control {
+        background-color: #f8f9fa;
+        border: 1px solid #ced4da;
+        color: #000;
+    }
+
+    .form-control::placeholder {
+        color: #6c757d;
+    }
+
+    .form-control:focus {
+        background-color: #fff;
+        color: #000;
+        box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+        border-color: #80bdff;
+    }
+
+    .btn-primary {
+        background-color: #0d6efd;
+        border: none;
+        width: 100%;
+        color: #fff;
+    }
+
+    .btn-primary:hover {
+        background-color: #0b5ed7;
+    }
+
+    .btn-secondary {
+        width: 100%;
+        margin-top: 10px;
+        background-color: #6c757d;
+        border: none;
+        color: #fff;
+    }
+
+    .btn-secondary:hover {
+        background-color: #5a6268;
+    }
+
+    .alert-danger {
+        background-color: #f8d7da;
+        color: #842029;
+        border: 1px solid #f5c2c7;
+    }
+</style>
+
 {% if not user %}
 <div class="row justify-content-center">
-    <div class="col-12 col-md-6">
+    <div class="col-12 col-md-6 login-container">
         <h2>Login</h2>
         {% if error %}
             <div class="alert alert-danger">{{ error }}</div>
@@ -10,14 +80,15 @@
         <form method="POST">
             <div class="mb-3">
                 <label for="username" class="form-label">Username</label>
-                <input type="text" class="form-control" id="username" name="username" required>
+                <input type="text" class="form-control" id="username" name="username" placeholder="Enter your username" required>
             </div>
             <div class="mb-3">
                 <label for="password" class="form-label">Password</label>
-                <input type="password" class="form-control" id="password" name="password" required>
+                <input type="password" class="form-control" id="password" name="password" placeholder="Enter your password" required>
             </div>
             <button type="submit" class="btn btn-primary">Login</button>
         </form>
+        <a href="/register"><button class="btn btn-secondary">Register</button></a>
     </div>
 </div>
 {% endif %}

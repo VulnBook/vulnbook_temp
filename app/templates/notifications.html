@@ -1,20 +1,62 @@
 {% extends "base.html" %}
 {% block content %}
-<h2>Notifications</h2>
-{% if notifications %}
-    <ul class="list-group mb-4">
-        {% for note in notifications %}
-            <li class="list-group-item">
-                {{ note.message }}
-                {% if note.message == 'You have a new friend request.' %}
-                    <a href="{{ url_for('main.friend_requests_page') }}">View</a>
-                {% elif note.link %}
-                    <a href="{{ note.link }}">View</a>
-                {% endif %}
-            </li>
-        {% endfor %}
+<style>
+  body {
+    background-color: #F2F4F7;
+    color: #000;
+  }
+  .notifications-container {
+    max-width: 700px;
+    margin: 2rem auto;
+    background: #fff;
+    border-radius: 0.5rem;
+    padding: 1.5rem 2rem;
+    box-shadow: 0 4px 8px rgb(0 0 0 / 0.1);
+  }
+  h2 {
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+    border-bottom: 2px solid #dee2e6;
+    padding-bottom: 0.4rem;
+  }
+  .list-group-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 1rem;
+    gap: 1rem;
+  }
+  .list-group-item a {
+    color: #007bff;
+    text-decoration: none;
+    font-weight: 500;
+  }
+  .list-group-item a:hover {
+    text-decoration: underline;
+  }
+  .no-notifications {
+    font-style: italic;
+    color: #6c757d;
+  }
+</style>
+
+<div class="notifications-container">
+  <h2>Notifications</h2>
+  {% if notifications %}
+    <ul class="list-group mb-0">
+      {% for note in notifications %}
+        <li class="list-group-item">
+          <span>{{ note.message }}</span>
+          {% if note.message == 'You have a new friend request.' %}
+            <a href="{{ url_for('main.friend_requests_page') }}">View</a>
+          {% elif note.link %}
+            <a href="{{ note.link }}">View</a>
+          {% endif %}
+        </li>
+      {% endfor %}
     </ul>
-{% else %}
-    <p>No notifications.</p>
-{% endif %}
+  {% else %}
+    <p class="no-notifications">No notifications.</p>
+  {% endif %}
+</div>
 {% endblock %}

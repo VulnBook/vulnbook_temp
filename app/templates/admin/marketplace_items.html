@@ -1,47 +1,108 @@
 {% extends 'base.html' %}
 {% block content %}
+<style>
+  .container {
+    max-width: 900px; /* wider container for better space */
+  }
+  .table thead th {
+    background-color: #343a40;
+    color: #fff;
+    text-align: center;
+  }
+  .table tbody td {
+    vertical-align: middle;
+  }
+  .table tbody tr:hover {
+    background-color: #f1f3f5;
+  }
+  .table tbody td.id-col,
+  .table thead th.id-col {
+    text-align: center;
+    width: 70px;
+  }
+  .table tbody td.image-col,
+  .table thead th.image-col {
+    text-align: center;
+    width: 100px;
+  }
+  .table tbody td.price-col,
+  .table thead th.price-col {
+    text-align: center;
+    width: 90px;
+  }
+  .table tbody td.action-col,
+  .table thead th.action-col {
+    text-align: center;
+    min-width: 180px;
+    white-space: nowrap;
+  }
+  .container h2 {
+    margin-bottom: 1.5rem;
+    font-weight: 700;
+    color: #212529;
+  }
+  img {
+    border-radius: 6px;
+  }
+  @media (max-width: 991px) {
+    .table-responsive {
+      overflow-x: auto;
+    }
+  }
+</style>
+
 <div class="container mt-4">
-    <h2>Marketplace Items (Pending Approval)</h2>
-    <table class="table table-bordered table-striped mt-3">
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>Seller</th>
-                <th>Image</th>
-                <th>Price</th>
-                <th>Description</th>
-                <th>Review</th>
-                <th>Submitted At</th>
-                <th>Action</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for item in items %}
-            <tr>
-                <td>{{ item.id }}</td>
-                <td><a href="{{ url_for('main.profile', id=item.user_id) }}">@{{ item.user.username }}</a></td>
-                <td>
-                    {% if item.image_url %}
-                        <img src="/{{ item.image_url }}" style="width:80px;height:80px;object-fit:cover;">
-                    {% else %}
-                        No Image
-                    {% endif %}
-                </td>
-                <td>${{ item.price }}</td>
-                <td>{{ item.description }}</td>
-                <td>{{ item.review }}</td>
-                <td>{{ item.created_at }}</td>
-                <td>
-                    <form method="POST" action="{{ url_for('main.admin_approve_marketplace_item', item_id=item.id) }}" style="display:inline;">
-                        <button type="submit" class="btn btn-success btn-sm">Approve</button>
-                    </form>
-                    <form method="POST" action="{{ url_for('main.admin_reject_marketplace_item', item_id=item.id) }}" style="display:inline;">
-                        <button type="submit" class="btn btn-danger btn-sm">Reject</button>
-                    </form>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
+  <h2>Marketplace Items (Pending Approval)</h2>
+  <div class="table-responsive">
+    <table class="table table-bordered table-striped">
+      <thead>
+        <tr>
+          <th class="id-col">ID</th>
+          <th>Seller</th>
+          <th class="image-col">Image</th>
+          <th class="price-col">Price</th>
+          <th>Description</th>
+          <th>Review</th>
+          <th>Submitted At</th>
+          <th class="action-col">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in items %}
+        <tr>
+          <td class="id-col">{{ item.id }}</td>
+          <td><a href="{{ url_for('main.profile', id=item.user_id) }}">@{{ item.user.username }}</a></td>
+          <td class="image-col">
+            {% if item.image_url %}
+              <img src="/{{ item.image_url }}" alt="Item Image" style="width:80px; height:80px; object-fit: cover;">
+            {% else %}
+              No Image
+            {% endif %}
+          </td>
+          <td class="price-col">${{ item.price }}</td>
+          <td>{{ item.description }}</td>
+          <td>{{ item.review }}</td>
+          <td>{{ item.created_at }}</td>
+          <td class="action-col">
+            <form method="POST" action="{{ url_for('main.admin_approve_marketplace_item', item_id=item.id) }}" style="display:inline;">
+              <button type="submit" class="btn btn-success btn-sm">Approve</button>
+            </form>
+            <form method="POST" action="{{ url_for('main.admin_reject_marketplace_item', item_id=item.id) }}" style="display:inline;">
+              <button type="submit" class="btn btn-danger btn-sm">Reject</button>
+            </form>
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="8" class="text-center">No items pending approval.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
     </table>
+  </div>
+
+  <div class="mt-4">
+    <a href="/admin" class="btn btn-secondary w-100">Back to Home</a>
+  </div>
 </div>
 {% endblock %}

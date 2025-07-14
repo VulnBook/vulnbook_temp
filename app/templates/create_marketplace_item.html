@@ -1,25 +1,45 @@
 {% extends 'base.html' %}
 {% block content %}
-<div class="container mt-4">
-    <h2>Sell an Item</h2>
+<style>
+  body {
+    background-color: #F2F4F7;
+    color: #000;
+  }
+  .sell-item-container {
+    background: #fff;
+    padding: 2rem;
+    border-radius: 0.5rem;
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+    margin-top: 3rem;
+  }
+  .form-label {
+    font-weight: 500;
+  }
+</style>
+
+<div class="container" style="max-width: 600px;">
+  <div class="sell-item-container">
+    <h2 class="mb-4">Sell an Item</h2>
     <form method="POST" enctype="multipart/form-data">
-        <div class="mb-3">
-            <label for="image" class="form-label">Product Image</label>
-            <input type="file" class="form-control" id="image" name="image" accept="image/*">
-        </div>
-        <div class="mb-3">
-            <label for="price" class="form-label">Price</label>
-            <input type="text" class="form-control" id="price" name="price" required>
-        </div>
-        <div class="mb-3">
-            <label for="description" class="form-label">Description</label>
-            <textarea class="form-control" id="description" name="description" rows="3" required></textarea>
-        </div>
-        <div class="mb-3">
-            <label for="review" class="form-label">Review (optional)</label>
-            <textarea class="form-control" id="review" name="review" rows="2"></textarea>
-        </div>
-        <button type="submit" class="btn btn-success">Submit for Approval</button>
+      <div class="mb-3">
+        <label for="image" class="form-label">Product Image</label>
+        <input type="file" class="form-control" id="image" name="image" accept="image/*">
+        <div class="form-text">Accepted formats: JPG, PNG, GIF. Max size: 5MB.</div>
+      </div>
+      <div class="mb-3">
+        <label for="price" class="form-label">Price (in $)</label>
+        <input type="number" class="form-control" id="price" name="price" min="1" step="0.01" required>
+      </div>
+      <div class="mb-3">
+        <label for="description" class="form-label">Description</label>
+        <textarea class="form-control" id="description" name="description" rows="3" placeholder="What are you selling?" required></textarea>
+      </div>
+      <div class="mb-3">
+        <label for="review" class="form-label">Review <small class="text-muted">(optional)</small></label>
+        <textarea class="form-control" id="review" name="review" rows="2" placeholder="Mention product quality, condition, etc."></textarea>
+      </div>
+      <button type="submit" class="btn btn-success w-100">Submit for Approval</button>
     </form>
+  </div>
 </div>
 {% endblock %}

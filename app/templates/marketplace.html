@@ -1,39 +1,82 @@
 {% extends 'base.html' %}
 {% block content %}
+<style>
+  body {
+    background-color: #F2F4F7;
+    color: #000;
+  }
+  .marketplace-header {
+    border-bottom: 2px solid #dee2e6;
+    padding-bottom: 0.5rem;
+  }
+  .balance-btn {
+    pointer-events: none; /* disable click but keep styling */
+    cursor: default;
+  }
+  .card {
+    transition: box-shadow 0.3s ease;
+    cursor: pointer;
+  }
+  .card:hover {
+    box-shadow: 0 8px 16px rgb(0 123 255 / 0.25);
+  }
+  .card-img-top {
+    object-fit: cover;
+    height: 200px;
+  }
+  .no-image-placeholder {
+    height: 200px;
+    background-color: #e9ecef;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #6c757d;
+    font-weight: 500;
+    font-size: 1.2rem;
+  }
+  .btn-group-top > * + * {
+    margin-left: 0.5rem;
+  }
+</style>
+
 <div class="container mt-4">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <h2>Marketplace</h2>
-        <div>
-            <button class="btn btn-outline-info" disabled>Balance: ${{ session.get('balance', 0) }}</button>
-            <a href="{{ url_for('main.add_balance') }}" class="btn btn-outline-success ms-2">Add Balance</a>
-        </div>
+  <div class="d-flex justify-content-between align-items-center mb-3 marketplace-header">
+    <h2>Marketplace</h2>
+    <div class="btn-group-top d-flex align-items-center">
+      <button class="btn btn-outline-info balance-btn" disabled>Balance: ${{ session.get('balance', 0) }}</button>
+      <a href="{{ url_for('main.add_balance') }}" class="btn btn-outline-success">Add Balance</a>
     </div>
-    <a href="{{ url_for('main.create_marketplace_item') }}" class="btn btn-primary mb-3">Sell an Item</a>
-    <a href="{{ url_for('main.buy_coupon_page') }}" class="btn btn-warning mb-3 ms-2">Buy Coupon</a>
-    <a href="{{ url_for('main.view_cart') }}" class="btn btn-info mb-3 ms-2">View Cart</a>
-    <div class="row">
-        {% for item in items %}
-        <div class="col-md-4 mb-4">
-            <div class="card h-100">
-                {% if item.image_url %}
-                <img src="/{{ item.image_url }}" class="card-img-top" style="object-fit:cover;width:100%;height:200px;" alt="Product image">
-                {% else %}
-                <div class="card-img-top bg-light d-flex align-items-center justify-content-center" style="height:200px;">No Image</div>
-                {% endif %}
-                <div class="card-body">
-                    <h5 class="card-title">${{ item.price }}</h5>
-                    <p class="card-text">{{ item.description }}</p>
-                    {% if item.review %}
-                    <p class="card-text"><strong>Review:</strong> {{ item.review }}</p>
-                    {% endif %}
-                    <p class="card-text"><small>Seller: <a href="{{ url_for('main.profile', id=item.user_id) }}">@{{ item.user.username }}</a></small></p>
-                    <form method="POST" action="{{ url_for('main.add_to_cart', item_id=item.id) }}">
-                        <button type="submit" class="btn btn-outline-info btn-sm mt-2">Add to Cart</button>
-                    </form>
-                </div>
-            </div>
+  </div>
+
+  <div class="mb-3">
+    <a href="{{ url_for('main.create_marketplace_item') }}" class="btn btn-primary">Sell an Item</a>
+    <a href="{{ url_for('main.buy_coupon_page') }}" class="btn btn-warning ms-2">Buy Coupon</a>
+    <a href="{{ url_for('main.view_cart') }}" class="btn btn-info ms-2">View Cart</a>
+  </div>
+
+  <div class="row">
+    {% for item in items %}
+    <div class="col-md-4 mb-4">
+      <div class="card h-100" tabindex="0" role="button" aria-label="Marketplace item {{ item.description }}">
+        {% if item.image_url %}
+          <img src="/{{ item.image_url }}" class="card-img-top" alt="Product image for {{ item.description }}">
+        {% else %}
+          <div class="no-image-placeholder">No Image</div>
+        {% endif %}
+        <div class="card-body d-flex flex-column">
+          <h5 class="card-title text-primary">${{ item.price }}</h5>
+          <p class="card-text flex-grow-1">{{ item.description }}</p>
+          {% if item.review %}
+          <p class="card-text"><strong>Review:</strong> {{ item.review }}</p>
+          {% endif %}
+          <p class="card-text"><small>Seller: <a href="{{ url_for('main.profile', id=item.user_id) }}" class="text-decoration-none">@{{ item.user.username }}</a></small></p>
+          <form method="POST" action="{{ url_for('main.add_to_cart', item_id=item.id) }}" class="mt-auto">
+            <button type="submit" class="btn btn-outline-info btn-sm w-100">Add to Cart</button>
+          </form>
         </div>
-        {% endfor %}
+      </div>
     </div>
+    {% endfor %}
+  </div>
 </div>
 {% endblock %}

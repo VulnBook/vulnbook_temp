@@ -1,17 +1,56 @@
 {% extends 'base.html' %}
 {% block content %}
-<div class="container mt-4" style="max-width:400px;">
+<style>
+  body {
+    background-color: #f8f9fa;
+    color: #212529;
+    margin: 0;
+    overflow-x: hidden;
+  }
+  .full-width-wrapper {
+    width: 100%;
+    min-height: 100vh;
+    background-color: #f8f9fa;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding-top: 4rem;
+  }
+  .login-container {
+    background: #fff;
+    padding: 2.5rem;
+    border-radius: 0.5rem;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    max-width: 600px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+  h2 {
+    margin-bottom: 1.5rem;
+    font-weight: 600;
+    text-align: center;
+  }
+  .btn-primary {
+    width: 100%;
+    padding: 0.5rem;
+    font-size: 1.1rem;
+  }
+</style>
+
+<div class="full-width-wrapper">
+  <div class="login-container">
     <h2>Admin Login</h2>
     <form method="POST">
-        <div class="mb-3">
-            <label for="username" class="form-label">Username</label>
-            <input type="text" class="form-control" id="username" name="username" required>
-        </div>
-        <div class="mb-3">
-            <label for="password" class="form-label">Password</label>
-            <input type="password" class="form-control" id="password" name="password" required>
-        </div>
-        <button type="submit" class="btn btn-primary">Login</button>
+      <div class="mb-3">
+        <label for="username" class="form-label">Username</label>
+        <input type="text" class="form-control" id="username" name="username" required autofocus>
+      </div>
+      <div class="mb-3">
+        <label for="password" class="form-label">Password</label>
+        <input type="password" class="form-control" id="password" name="password" required>
+      </div>
+      <button type="submit" class="btn btn-primary">Login</button>
     </form>
+  </div>
 </div>
 {% endblock %}

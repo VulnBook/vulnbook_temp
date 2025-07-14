@@ -1,43 +1,102 @@
 {% extends "base.html" %}
 {% block content %}
-<h2>Friend Requests</h2>
-<div class="row">
+<style>
+  body {
+    background-color: #F2F4F7;
+    color: #000;
+  }
+  .friend-requests-container {
+    max-width: 900px;
+    margin: 2rem auto;
+  }
+  .requests-card {
+    background: #fff;
+    border-radius: 0.5rem;
+    box-shadow: 0 4px 8px rgb(0 0 0 / 0.1);
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+  }
+  .requests-header {
+    font-weight: 600;
+    font-size: 1.6rem;
+    margin-bottom: 1rem;
+    border-bottom: 2px solid #dee2e6;
+    padding-bottom: 0.4rem;
+  }
+  .list-group-item {
+    gap: 1rem;
+  }
+  /* Align buttons nicely and separate them a bit */
+  .btn-group {
+    display: flex;
+    gap: 0.5rem;
+  }
+  /* Smaller font for the friend info text */
+  .request-info {
+    font-size: 1rem;
+  }
+  /* Link hover effect */
+  a.text-link:hover {
+    color: #007bff;
+    text-decoration: underline;
+  }
+</style>
+
+<div class="friend-requests-container">
+  <h2 class="mb-4">Friend Requests</h2>
+  <div class="row">
     <div class="col-md-6">
-        <h4>Received</h4>
+      <div class="requests-card">
+        <h4 class="requests-header">Received</h4>
         {% if received %}
-            <ul class="list-group mb-4">
+          <ul class="list-group">
             {% for fr in received %}
-                <li class="list-group-item d-flex justify-content-between align-items-center">
-                    Friend request from <a href="{{ url_for('main.profile', id=fr.from_user_id) }}">@{{ fr.sender.username }}</a>
-                    <form method="POST" action="{{ url_for('main.respond_friend_request', request_id=fr.id, action='accept') }}" style="display:inline;">
-                        <button class="btn btn-success btn-sm" type="submit">Accept</button>
-                    </form>
-                    <form method="POST" action="{{ url_for('main.respond_friend_request', request_id=fr.id, action='reject') }}" style="display:inline;">
-                        <button class="btn btn-danger btn-sm" type="submit">Reject</button>
-                    </form>
-                </li>
+              <li class="list-group-item d-flex justify-content-between align-items-center flex-wrap">
+                <div class="request-info">
+                  Friend request from 
+                  <a href="{{ url_for('main.profile', id=fr.from_user_id) }}" class="text-link">@{{ fr.sender.username }}</a>
+                </div>
+                <div class="btn-group">
+                  <form method="POST" action="{{ url_for('main.respond_friend_request', request_id=fr.id, action='accept') }}" style="margin:0;">
+                    <button class="btn btn-success btn-sm" type="submit">Accept</button>
+                  </form>
+                  <form method="POST" action="{{ url_for('main.respond_friend_request', request_id=fr.id, action='reject') }}" style="margin:0;">
+                    <button class="btn btn-danger btn-sm" type="submit">Reject</button>
+                  </form>
+                </div>
+              </li>
             {% endfor %}
-            </ul>
+          </ul>
         {% else %}
-            <p>No friend requests received.</p>
+          <p class="text-muted">No friend requests received.</p>
         {% endif %}
+      </div>
     </div>
+
     <div class="col-md-6">
-        <h4>Sent</h4>
+      <div class="requests-card">
+        <h4 class="requests-header">Sent</h4>
         {% if sent %}
-            <ul class="list-group mb-4">
+          <ul class="list-group">
             {% for fr in sent %}
-                <li class="list-group-item d-flex justify-content-between align-items-center">
-                    Friend request to <a href="{{ url_for('main.profile', id=fr.to_user_id) }}">@{{ fr.receiver.username }}</a>
-                    <form method="POST" action="{{ url_for('main.cancel_friend_request', to_user_id=fr.to_user_id) }}" style="display:inline;">
-                        <button class="btn btn-warning btn-sm" type="submit">Cancel</button>
-                    </form>
-                </li>
+              <li class="list-group-item d-flex justify-content-between align-items-center flex-wrap">
+                <div class="request-info">
+                  Friend request to 
+                  <a href="{{ url_for('main.profile', id=fr.to_user_id) }}" class="text-link">@{{ fr.receiver.username }}</a>
+                </div>
+                <div>
+                  <form method="POST" action="{{ url_for('main.cancel_friend_request', to_user_id=fr.to_user_id) }}" style="margin:0;">
+                    <button class="btn btn-warning btn-sm" type="submit">Cancel</button>
+                  </form>
+                </div>
+              </li>
             {% endfor %}
-            </ul>
+          </ul>
         {% else %}
-            <p>No friend requests sent.</p>
+          <p class="text-muted">No friend requests sent.</p>
         {% endif %}
+      </div>
     </div>
+  </div>
 </div>
 {% endblock %}

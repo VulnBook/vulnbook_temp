@@ -1,15 +1,52 @@
 {% extends "base.html" %}
 {% block content %}
+<style>
+  .card-title a {
+    text-decoration: none;
+    color: #0d6efd; /* bootstrap primary */
+  }
+  .card-title a:hover {
+    text-decoration: underline;
+  }
+  .card-text img,
+  .card-text video {
+    max-width: 100%;
+    border-radius: 6px;
+  }
+  .btn-outline-primary.btn-sm,
+  .btn-outline-success.btn-sm,
+  .btn-outline-primary.btn-sm {
+    min-width: 80px;
+  }
+  .dropdown-menu li form button.dropdown-item {
+    border: none;
+    background: none;
+    padding: 0;
+    width: 100%;
+    text-align: left;
+  }
+  /* Prevent text overflow in comments */
+  .card-text {
+    white-space: pre-wrap; /* preserve line breaks */
+  }
+  /* Small gap between buttons */
+  .d-flex.gap-2 > form {
+    margin-bottom: 0;
+  }
+</style>
+
 <div class="row">
     <div class="col-12">
         <h2>Post</h2>
         <div class="card mb-3">
             <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center">
-                    <h5 class="card-title"><a href="{{ url_for('main.profile', id=post.user.id) }}">@{{ post.user.username }}</a></h5>
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h5 class="card-title">
+                      <a href="{{ url_for('main.profile', id=post.user.id) }}">@{{ post.user.username }}</a>
+                    </h5>
                     <div class="dropdown">
-                        <button class="btn btn-link" type="button" id="dropdownMenuButton{{ post.id }}" data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="bi bi-three-dots"></i>
+                        <button class="btn btn-link p-0" type="button" id="dropdownMenuButton{{ post.id }}" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-three-dots fs-4"></i>
                         </button>
                         <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton{{ post.id }}">
                             {% if user.id == post.user.id %}
@@ -29,7 +66,7 @@
                     {% if image.file_type == 'image' %}
                         <img src="{{ url_for('static', filename=image.file_path) }}" class="img-fluid mb-2" alt="Post Image">
                     {% else %}
-                        <video controls class="img-fluid mb-2">
+                        <video controls class="img-fluid mb-2" style="max-height:300px;">
                             <source src="{{ url_for('static', filename=image.file_path) }}" type="video/mp4">
                         </video>
                     {% endif %}
@@ -56,7 +93,7 @@
                     <form method="POST" action="{{ url_for('main.edit_post', post_id=post.id) }}">
                         <div class="modal-body">
                             <div class="mb-3">
-                                <textarea class="form-control" name="content" required>{{ post.content }}</textarea>
+                                <textarea class="form-control" name="content" required rows="5">{{ post.content }}</textarea>
                             </div>
                         </div>
                         <div class="modal-footer">
@@ -80,7 +117,7 @@
                             <input type="hidden" name="post_id" value="{{ post.id }}">
                             <div class="mb-3">
                                 <label for="reason" class="form-label">Reason for reporting</label>
-                                <textarea class="form-control" name="reason" required></textarea>
+                                <textarea class="form-control" name="reason" required rows="3"></textarea>
                             </div>
                         </div>
                         <div class="modal-footer">
@@ -91,6 +128,7 @@
                 </div>
             </div>
         </div>
+
         <h3>Comments</h3>
         <form method="POST" action="{{ url_for('main.single_post', post_id=post.id) }}">
             <div class="mb-3">
@@ -105,8 +143,8 @@
                     <div class="d-flex justify-content-between align-items-center">
                         <h6 class="card-title">{{ comment.user.username }}</h6>
                         <div class="dropdown">
-                            <button class="btn btn-link" type="button" id="dropdownMenuButtonComment{{ comment.id }}" data-bs-toggle="dropdown" aria-expanded="false">
-                                <i class="bi bi-three-dots"></i>
+                            <button class="btn btn-link p-0" type="button" id="dropdownMenuButtonComment{{ comment.id }}" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="bi bi-three-dots fs-5"></i>
                             </button>
                             <ul class="dropdown-menu" aria-labelledby="dropdownMenuButtonComment{{ comment.id }}">
                                 {% if user.id == comment.user.id %}
@@ -127,6 +165,7 @@
                     </form>
                 </div>
             </div>
+
             <!-- Report Comment Modal -->
             <div class="modal fade" id="reportCommentModal{{ comment.id }}" tabindex="-1" aria-labelledby="reportCommentModalLabel{{ comment.id }}" aria-hidden="true">
                 <div class="modal-dialog">
@@ -140,7 +179,7 @@
                                 <input type="hidden" name="comment_id" value="{{ comment.id }}">
                                 <div class="mb-3">
                                     <label for="reason" class="form-label">Reason for reporting</label>
-                                    <textarea class="form-control" name="reason" required></textarea>
+                                    <textarea class="form-control" name="reason" required rows="3"></textarea>
                                 </div>
                             </div>
                             <div class="modal-footer">

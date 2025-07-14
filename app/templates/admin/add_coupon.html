@@ -1,38 +1,64 @@
 {% extends 'base.html' %}
 {% block content %}
-<div class="container mt-4" style="max-width: 500px;">
-    <h2>Add Coupon</h2>
+<style>
+  body {
+    background-color: #F2F4F7;
+    color: #000;
+  }
+  .form-section {
+    background: #fff;
+    padding: 2rem;
+    border-radius: 0.5rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  }
+</style>
+
+<div class="container mt-4" style="max-width: 600px;">
+  <div class="form-section">
+    <h2 class="mb-4">Add Coupon</h2>
     <form method="POST">
-        <div class="mb-3">
-            <label for="coupon_code" class="form-label">Coupon Code</label>
-            <input type="text" class="form-control" id="coupon_code" name="coupon_code" required>
-        </div>
-        <div class="mb-3">
-            <label for="percentage" class="form-label">Discount Percentage</label>
-            <input type="number" class="form-control" id="percentage" name="percentage" min="1" max="100" required>
-        </div>
-        <div class="mb-3">
-            <label for="max_discount" class="form-label">Maximum Discount ($)</label>
-            <input type="number" class="form-control" id="max_discount" name="max_discount" min="1" required>
-        </div>
-        <div class="mb-3">
-            <label for="expiry_date" class="form-label">Expiry Date</label>
-            <input type="date" class="form-control" id="expiry_date" name="expiry_date" required>
-        </div>
-        <div class="mb-3">
-            <label for="price" class="form-label">Coupon Price ($)</label>
-            <input type="number" class="form-control" id="price" name="price" min="1" required>
-        </div>
-        <button type="submit" class="btn btn-success">Add Coupon</button>
+      <div class="mb-3">
+        <label for="coupon_code" class="form-label">Coupon Code</label>
+        <input type="text" class="form-control" id="coupon_code" name="coupon_code" required>
+      </div>
+
+      <div class="mb-3">
+        <label for="percentage" class="form-label">Discount Percentage</label>
+        <input type="number" class="form-control" id="percentage" name="percentage" min="1" max="100" required>
+      </div>
+
+      <div class="mb-3">
+        <label for="max_discount" class="form-label">Maximum Discount ($)</label>
+        <input type="number" class="form-control" id="max_discount" name="max_discount" min="1" required>
+      </div>
+
+      <div class="mb-3">
+        <label for="expiry_date" class="form-label">Expiry Date</label>
+        <input type="date" class="form-control" id="expiry_date" name="expiry_date" required>
+      </div>
+
+      <div class="mb-3">
+        <label for="price" class="form-label">Coupon Price ($)</label>
+        <input type="number" class="form-control" id="price" name="price" min="1" required>
+      </div>
+
+      <button type="submit" class="btn btn-success w-100">Add Coupon</button>
     </form>
-    <hr>
-    <h3>Import Coupons from XML</h3>
+    <div class="mt-4">
+        <a href="/admin" class="btn btn-secondary w-100">Back to Home</a>
+    </div>
+  </div>
+
+  <div class="form-section mt-5">
+    <h3 class="mb-4">Import Coupons from XML</h3>
     <form method="POST" action="{{ url_for('main.admin_import_coupons') }}" enctype="multipart/form-data">
-        <div class="mb-3">
-            <label for="xmlfile" class="form-label">XML File</label>
-            <input type="file" class="form-control" id="xmlfile" name="xmlfile" accept=".xml" required>
-        </div>
-        <button type="submit" class="btn btn-warning">Import Coupons (Vulnerable to XXE)</button>
+      <div class="mb-3">
+        <label for="xmlfile" class="form-label">XML File</label>
+        <input type="file" class="form-control" id="xmlfile" name="xmlfile" accept=".xml" required>
+      </div>
+      <button type="submit" class="btn btn-warning w-100">Import Coupons</button>
+      <div class="form-text text-danger mt-2">⚠️ This endpoint is vulnerable to XXE attacks. Use with caution.</div>
     </form>
+  </div>
 </div>
 {% endblock %}

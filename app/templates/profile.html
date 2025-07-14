@@ -1,126 +1,170 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-12 col-md-6">
+<style>
+  body {
+    background-color: #F2F4F7;
+    color: #000;
+  }
+  .profile-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .profile-header h2 {
+    margin-bottom: 0;
+  }
+  .profile-image {
+    max-height: 300px;
+    object-fit: cover;
+    border-radius: 0.5rem;
+  }
+  .badge + form, .badge + span {
+    margin-left: 0.5rem;
+  }
+  .card {
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+  }
+  .post-image {
+    max-width: 100px;
+    max-height: 100px;
+    object-fit: cover;
+    border-radius: 0.25rem;
+    margin-right: 5px;
+  }
+</style>
+
+<div class="container-fluid px-0">
+  <div class="row m-0 p-0">
+    <div class="col-12 p-0">
+      <div class="profile-header mb-3">
         <h2>{{ user.firstname }} {{ user.lastname }}'s Profile</h2>
         {% if user.verified %}
-            <button class="btn btn-success btn-sm" disabled>Verified User</button>
+          <span class="badge bg-success">Verified User</span>
         {% endif %}
-        <div class="card">
-            {% if user.image_url %}
-                <img src="{{ user.image_url }}" class="card-img-top" alt="Profile Image">
-            {% else %}
-                <img src="https://via.placeholder.com/150" class="card-img-top" alt="Profile Image">
-            {% endif %}
-            <div class="card-body">
-                <h5 class="card-title">@{{ user.username }}</h5>
-                <p class="card-text"><strong>Date of Birth:</strong> {{ user.dob }}</p>
-                <p class="card-text"><strong>Bio:</strong> {{ user.bio or 'No bio set.' }}</p>
-                {% if not editable and current_user and current_user.id != user.id %}
-                    {% set already_friends = false %}
-                    {% set request_sent = false %}
-                    {% set request_received = false %}
-                    {% for f in current_user.friendships %}
-                        {% if f.friend_id == user.id %}
-                            {% set already_friends = true %}
-                        {% endif %}
-                    {% endfor %}
-                    {% for fr in current_user.friend_requests_sent %}
-                        {% if fr.to_user_id == user.id and fr.status == 'pending' %}
-                            {% set request_sent = true %}
-                        {% endif %}
-                    {% endfor %}
-                    {% for fr in current_user.friend_requests_received %}
-                        {% if fr.from_user_id == user.id and fr.status == 'pending' %}
-                            {% set request_received = true %}
-                        {% endif %}
-                    {% endfor %}
-                    {% if already_friends %}
-                        <span class="badge bg-success">Friends</span>
-                        <form method="POST" action="{{ url_for('main.unfriend', user_id=user.id) }}" style="display:inline;">
-                            <button class="btn btn-sm btn-outline-danger" type="submit">Unfriend</button>
-                        </form>
-                    {% elif request_sent %}
-                        <span class="badge bg-warning text-dark">Friend Request Sent</span>
-                        <form method="POST" action="{{ url_for('main.cancel_friend_request', to_user_id=user.id) }}" style="display:inline;">
-                            <button class="btn btn-sm btn-outline-danger" type="submit">Cancel Request</button>
-                        </form>
-                    {% elif request_received %}
-                        <span class="badge bg-info text-dark">Friend Request Received</span>
-                    {% else %}
-                        <form method="POST" action="{{ url_for('main.send_friend_request', to_user_id=user.id) }}" style="display:inline;">
-                            <input type="hidden" name="friend_request_from" value="{{ current_user.id }}">
-                            <input type="hidden" name="friend_request_to" value="{{ user.id }}">
-                            <button class="btn btn-sm btn-outline-primary" type="submit">Send Friend Request</button>
-                        </form>
-                    {% endif %}
-                {% endif %}
-                {% if editable %}
-                    <form method="POST" enctype="multipart/form-data">
-                        <div class="mb-3">
-                            <label for="bio" class="form-label">Edit Bio</label>
-                            <textarea class="form-control" id="bio" name="bio">{{ user.bio }}</textarea>
-                        </div>
-                        <div class="mb-3">
-                            <label for="image_url" class="form-label">Profile Image URL</label>
-                            <input type="text" class="form-control" id="image_url" name="image_url" value="{{ user.image_url }}">
-                        </div>
-                        <button type="submit" class="btn btn-primary">Update Profile</button>
-                    </form>
-                    <form method="POST" action="{{ url_for('main.delete_profile', user_id=user.id) }}" onsubmit="return confirm('Are you sure you want to delete your profile? This action cannot be undone.');" class="mt-3">
-                        <div class="mb-3">
-                            <label for="delete_password" class="form-label">Confirm Password to Delete Profile</label>
-                            <input type="password" class="form-control" id="delete_password" name="delete_password" required>
-                        </div>
-                        <button type="submit" class="btn btn-danger w-100">Delete Profile</button>
-                    </form>
-                {% endif %}
-            </div>
-        </div>
-    </div>
-</div>
+      </div>
 
-<div class="row justify-content-center mt-4">
-    <div class="col-12 col-md-6">
-        <h3>{{ user.firstname }}'s Posts</h3>
-        {% if user_posts %}
-            {% for post in user_posts %}
-                <div class="card mb-3">
-                    <div class="card-body">
-                        <h5 class="card-title">@{{ user.username }}</h5>
-                        <p class="card-text">{{ post.content|safe }}</p>
-                        <p class="card-text"><small class="text-muted">{{ post.created_at }}</small></p>
-                        {% if post.images %}
-                            <div class="mt-2">
-                                {% for img in post.images %}
-                                    <img src="/{{ img.file_path }}" alt="Post Image" style="max-width:100px; max-height:100px; margin-right:5px;">
-                                {% endfor %}
-                            </div>
-                        {% endif %}
-                        <form method="POST" action="{{ url_for('main.like_post', post_id=post.id) }}" style="display:inline;">
-                            <button type="submit" class="btn btn-outline-primary btn-sm">Like</button>
-                        </form>
-                        <span class="badge bg-light text-dark ms-2">Likes: {{ post.like_count }}</span>
-                        <form method="POST" action="{{ url_for('main.share_post', post_id=post.id) }}" style="display:inline;">
-                            <input type="hidden" name="next" value="http://evil.com">
-                            <button type="submit" class="btn btn-outline-success btn-sm">Share</button>
-                        </form>
-                        <h6 class="mt-3">Comments</h6>
-                        {% for comment in post.comments %}
-                            <p><strong>{{ comment.user.username }}</strong>: {{ comment.content|safe }}</p>
-                        {% endfor %}
-                        <form method="POST" action="{{ url_for('main.single_post', post_id=post.id) }}">
-                            <div class="mb-2">
-                                <input type="text" class="form-control" name="content" placeholder="Add a comment..." required>
-                            </div>
-                            <button type="submit" class="btn btn-secondary btn-sm">Comment</button>
-                        </form>
-                    </div>
-                </div>
-            {% endfor %}
+      <div class="card mb-4">
+        {% if user.image_url %}
+          <img src="{{ user.image_url }}" class="card-img-top profile-image" alt="Profile Image">
         {% else %}
-            <p>No posts yet.</p>
+          <img src="https://via.placeholder.com/300x200" class="card-img-top profile-image" alt="Profile Image">
         {% endif %}
+        <div class="card-body">
+          <h5 class="card-title">@{{ user.username }}</h5>
+          <p class="card-text"><strong>Date of Birth:</strong> {{ user.dob }}</p>
+          <p class="card-text"><strong>Bio:</strong> {{ user.bio or 'No bio set.' }}</p>
+
+          {% if not editable and current_user and current_user.id != user.id %}
+            {% set already_friends = false %}
+            {% set request_sent = false %}
+            {% set request_received = false %}
+            {% for f in current_user.friendships %}
+              {% if f.friend_id == user.id %}
+                {% set already_friends = true %}
+              {% endif %}
+            {% endfor %}
+            {% for fr in current_user.friend_requests_sent %}
+              {% if fr.to_user_id == user.id and fr.status == 'pending' %}
+                {% set request_sent = true %}
+              {% endif %}
+            {% endfor %}
+            {% for fr in current_user.friend_requests_received %}
+              {% if fr.from_user_id == user.id and fr.status == 'pending' %}
+                {% set request_received = true %}
+              {% endif %}
+            {% endfor %}
+
+            {% if already_friends %}
+              <span class="badge bg-success">Friends</span>
+              <form method="POST" action="{{ url_for('main.unfriend', user_id=user.id) }}" class="d-inline">
+                <button class="btn btn-sm btn-outline-danger">Unfriend</button>
+              </form>
+            {% elif request_sent %}
+              <span class="badge bg-warning text-dark">Friend Request Sent</span>
+              <form method="POST" action="{{ url_for('main.cancel_friend_request', to_user_id=user.id) }}" class="d-inline">
+                <button class="btn btn-sm btn-outline-danger">Cancel Request</button>
+              </form>
+            {% elif request_received %}
+              <span class="badge bg-info text-dark">Friend Request Received</span>
+            {% else %}
+              <form method="POST" action="{{ url_for('main.send_friend_request', to_user_id=user.id) }}" class="d-inline">
+                <button class="btn btn-sm btn-outline-primary">Send Friend Request</button>
+              </form>
+            {% endif %}
+          {% endif %}
+
+          {% if editable %}
+            <form method="POST" enctype="multipart/form-data" class="mt-4">
+              <div class="mb-3">
+                <label for="bio" class="form-label">Edit Bio</label>
+                <textarea class="form-control" id="bio" name="bio">{{ user.bio }}</textarea>
+              </div>
+              <div class="mb-3">
+                <label for="image_url" class="form-label">Profile Image URL</label>
+                <input type="text" class="form-control" id="image_url" name="image_url" value="{{ user.image_url }}">
+              </div>
+              <button type="submit" class="btn btn-primary">Update Profile</button>
+            </form>
+
+            <form method="POST" action="{{ url_for('main.delete_profile', user_id=user.id) }}" onsubmit="return confirm('Are you sure you want to delete your profile? This action cannot be undone.');" class="mt-3">
+              <div class="mb-3">
+                <label for="delete_password" class="form-label">Confirm Password to Delete Profile</label>
+                <input type="password" class="form-control" id="delete_password" name="delete_password" required>
+              </div>
+              <button type="submit" class="btn btn-danger w-100">Delete Profile</button>
+            </form>
+          {% endif %}
+        </div>
+      </div>
     </div>
+  </div>
+
+  <div class="row justify-content-center m-0 p-0">
+    <div class="col-12 col-md-12 col-lg-12 p-0">
+      <h3>{{ user.firstname }}'s Posts</h3>
+      {% if user_posts %}
+        {% for post in user_posts %}
+          <div class="card mb-3">
+            <div class="card-body">
+              <h5 class="card-title">@{{ user.username }}</h5>
+              <p class="card-text">{{ post.content|safe }}</p>
+              <p class="card-text"><small class="text-muted">{{ post.created_at }}</small></p>
+
+              {% if post.images %}
+                <div class="mb-3 d-flex flex-wrap">
+                  {% for img in post.images %}
+                    <img src="/{{ img.file_path }}" alt="Post Image" class="post-image">
+                  {% endfor %}
+                </div>
+              {% endif %}
+
+              <form method="POST" action="{{ url_for('main.like_post', post_id=post.id) }}" class="d-inline">
+                <button type="submit" class="btn btn-outline-primary btn-sm">Like</button>
+              </form>
+              <span class="badge bg-light text-dark ms-2">Likes: {{ post.like_count }}</span>
+
+              <form method="POST" action="{{ url_for('main.share_post', post_id=post.id) }}" class="d-inline">
+                <button type="submit" class="btn btn-outline-success btn-sm">Share</button>
+              </form>
+
+              <h6 class="mt-3">Comments</h6>
+              {% for comment in post.comments %}
+                <p><strong>{{ comment.user.username }}</strong>: {{ comment.content|safe }}</p>
+              {% endfor %}
+
+              <form method="POST" action="{{ url_for('main.single_post', post_id=post.id) }}">
+                <div class="mb-2">
+                  <input type="text" class="form-control" name="content" placeholder="Add a comment..." required>
+                </div>
+                <button type="submit" class="btn btn-secondary btn-sm">Comment</button>
+              </form>
+            </div>
+          </div>
+        {% endfor %}
+      {% else %}
+        <p class="text-muted">No posts yet.</p>
+      {% endif %}
+    </div>
+  </div>
 </div>
 {% endblock %}

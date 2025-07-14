@@ -1,7 +1,72 @@
 {% extends "base.html" %}
 {% block content %}
+<style>
+    body {
+        background: #F2F4F7;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #000;
+    }
+
+    .register-container {
+        background-color: #ffffff;
+        padding: 30px;
+        border-radius: 12px;
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+        width: 65%;
+    }
+
+    .register-container h2 {
+        text-align: center;
+        margin-bottom: 25px;
+        color: #000;
+    }
+
+    .form-control {
+        background-color: #f8f9fa;
+        border: 1px solid #ced4da;
+        color: #000;
+    }
+
+    .form-control::placeholder {
+        color: #6c757d;
+    }
+
+    .form-control:focus {
+        background-color: #fff;
+        color: #000;
+        box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+        border-color: #80bdff;
+    }
+
+    .btn-primary {
+        background-color: #0d6efd;
+        border: none;
+        width: 100%;
+        color: #fff;
+    }
+
+    .btn-primary:hover {
+        background-color: #0b5ed7;
+    }
+
+    .btn-secondary {
+        width: 100%;
+        margin-top: 10px;
+        background-color: #6c757d;
+        border: none;
+        color: #fff;
+    }
+
+    .btn-secondary:hover {
+        background-color: #5a6268;
+    }
+</style>
+
 <div class="row justify-content-center">
-    <div class="col-12 col-md-6">
+    <div class="col-12 col-md-6 register-container">
         <h2>Register</h2>
         <form method="POST">
             <div class="mb-3">
@@ -30,6 +95,7 @@
             </div>
             <button type="submit" class="btn btn-primary">Register</button>
         </form>
+        <a href="/login"><button class="btn btn-secondary">Login</button></a>
     </div>
 </div>
 {% endblock %}
