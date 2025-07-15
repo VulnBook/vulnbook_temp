@@ -2,22 +2,27 @@
 {% block content %}
 <style>
   body {
-    background-color: #f8f9fa;
-    color: #212529;
     margin: 0;
     overflow-x: hidden;
+    background-image: url('/static/background.png');
+    background-repeat: no-repeat;
+    background-position: center center;
+    background-attachment: fixed;
+    background-size: cover;
+    color: #212529;
   }
   .full-width-wrapper {
     width: 100%;
     min-height: 100vh;
-    background-color: #f8f9fa;
     display: flex;
     justify-content: center;
     align-items: flex-start;
     padding-top: 4rem;
+    /* Remove background color so the body background image shows */
+    background-color: transparent;
   }
   .login-container {
-    background: #fff;
+    background: rgb(226, 236, 167);
     padding: 2.5rem;
     border-radius: 0.5rem;
     box-shadow: 0 4px 12px rgba(0,0,0,0.1);

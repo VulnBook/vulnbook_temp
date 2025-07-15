@@ -6,7 +6,15 @@
     color: #000;
   }
   .post-card {
+    background-color: rgb(226, 236, 167);
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+  }
+  .create-post-form {
+    background-color: rgb(226, 236, 167);
+    padding: 1.5rem;
+    border-radius: 0.5rem;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+    margin-bottom: 2rem;
   }
   .comment-box, .reply-box {
     margin-top: 0.5rem;
@@ -19,12 +27,14 @@
 <div class="container mt-4" style="max-width: 800px;">
   <h2 class="mb-4">Posts</h2>
 
-  <form method="POST" action="{{ url_for('main.create_post') }}">
-    <div class="mb-3">
-      <textarea class="form-control" name="content" rows="3" placeholder="What's on your mind?" required></textarea>
-    </div>
-    <button type="submit" class="btn btn-primary">Post</button>
-  </form>
+  <div class="create-post-form">
+    <form method="POST" action="{{ url_for('main.create_post') }}">
+      <div class="mb-3">
+        <textarea class="form-control" name="content" rows="3" placeholder="What's on your mind?" required></textarea>
+      </div>
+      <button type="submit" class="btn btn-primary">Post</button>
+    </form>
+  </div>
 
   <hr>
 

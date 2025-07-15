@@ -7,8 +7,15 @@
 .card {
     border-radius: 10px;
 } */
- body {
-    background-color: #f8f9fa;
+body {
+    background-image: url('/static/background.png');
+    background-repeat: no-repeat;
+    background-position: center center; /* or try center center */
+    background-attachment: fixed;
+    background-size: cover;
+    color: #000;
+    margin: 0;
+    min-height: 100vh;
 }
 .container {
     max-width: 800px;

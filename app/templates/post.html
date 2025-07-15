@@ -1,6 +1,16 @@
 {% extends "base.html" %}
 {% block content %}
 <style>
+  .card {
+    background-color: rgb(226, 236, 167);
+  }
+  .comment-form {
+    background-color: rgb(226, 236, 167);
+    padding: 1.5rem;
+    border-radius: 0.5rem;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+    margin-bottom: 1rem;
+  }
   .card-title a {
     text-decoration: none;
     color: #0d6efd; /* bootstrap primary */
@@ -130,12 +140,14 @@
         </div>
 
         <h3>Comments</h3>
-        <form method="POST" action="{{ url_for('main.single_post', post_id=post.id) }}">
-            <div class="mb-3">
-                <textarea class="form-control" name="content" placeholder="Add a comment..." rows="3" required></textarea>
-            </div>
-            <button type="submit" class="btn btn-primary">Comment</button>
-        </form>
+        <div class="comment-form">
+            <form method="POST" action="{{ url_for('main.single_post', post_id=post.id) }}">
+                <div class="mb-3">
+                    <textarea class="form-control" name="content" placeholder="Add a comment..." rows="3" required></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary">Comment</button>
+            </form>
+        </div>
         <hr>
         {% for comment in comments %}
             <div class="card mb-2">
