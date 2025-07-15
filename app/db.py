@@ -30,7 +30,7 @@ db = SQLAlchemy()
 def create_app():
     app = Flask(__name__)
     app.config['SECRET_KEY'] = 'weak-secret-key'  # VULNERABLE: Weak secret key
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://shah_user:shah_password@localhost/shah_database'
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://cyberpit:cyberpit123456@postgres:5432/vulnbook_db'
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.config['UPLOAD_FOLDER'] = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'static/uploads')
     app.config['ALLOWED_EXTENSIONS'] = {'png', 'jpg', 'jpeg', 'gif', 'mp4'}

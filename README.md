@@ -61,10 +61,34 @@ VulnBook is a social networking application intentionally designed with security
 
 ### Installation
 
+To quickly set up the VulnBook application, you can use Docker or run it locally without Docker.
+
 1. **Clone the repository**:
    ```bash
-   git clone https://github.com/yourusername/VulnBook.git
-   cd VulnBook
+   git clone https://github.com/VulnBook/vulnbook_temp.git
+   cd vulnbook_temp
+   ```
+
+2. **Docker Setup (Optional)**:
+   If you prefer using Docker, you can set up the application with Docker Compose:
+   ```bash
+   docker-compose up -d --build
+   ```
+
+This will build the Docker images and start the application along with the database.
+Now go to `http://localhost:5000` to access the application. If any error occurs, check the logs with:
+   ```bash
+    docker logs vulnbook_flask # Check logs for the Flask app
+    docker logs vulnbook_postgres    # Check logs for the database
+   ```
+
+Or, if you want to run it without Docker, follow the steps below.
+
+
+1. **Clone the repository**:
+   ```bash
+   git clone https://github.com/VulnBook/vulnbook_temp.git
+   cd vulnbook_temp
    ```
 
 2. **Create and activate virtual environment**:

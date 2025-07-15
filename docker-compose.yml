@@ -1,32 +1,58 @@
 version: '3.8'
+
 services:
-  web:
+  postgres:
+    image: postgres:15
+    container_name: vulnbook_postgres
+    environment:
+      POSTGRES_USER: cyberpit
+      POSTGRES_PASSWORD: cyberpit123456
+      POSTGRES_DB: vulnbook_db
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - vulnbook_network
+    restart: unless-stopped
+
+  pgadmin:
+    image: dpage/pgadmin4:8
+    container_name: vulnbook_pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@vulnbook.com
+      PGADMIN_DEFAULT_PASSWORD: admin123
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: 'False'
+    ports:
+      - "8080:80"
+    depends_on:
+      - postgres
+    networks:
+      - vulnbook_network
+    restart: unless-stopped
+
+  flask_app:
     build:
       context: .
-      dockerfile: docker/Dockerfile
+      dockerfile: Dockerfile
+    container_name: vulnbook_flask
     ports:
       - "5000:5000"
-    environment:
-      - FLASK_ENV=development
-      - FLASK_RUN_HOST=0.0.0.0
     depends_on:
-      - db
-    volumes:
-      - ./app:/app/app
-    networks:
-      - vulnbook-network
-  db:
-    image: postgres:13
+      - postgres
     environment:
-      - POSTGRES_USER=vulnbook
-      - POSTGRES_PASSWORD=vulnbook
-      - POSTGRES_DB=vulnbook
+      - FLASK_APP=run.py
+      - FLASK_ENV=production
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - ./app/static/uploads:/app/app/static/uploads
     networks:
-      - vulnbook-network
-networks:
-  vulnbook-network:
-    driver: bridge
+      - vulnbook_network
+    restart: unless-stopped
+
 volumes:
-  pgdata:
+  postgres_data:
+
+networks:
+  vulnbook_network:
+    driver: bridge
