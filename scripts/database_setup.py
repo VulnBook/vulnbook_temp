@@ -80,7 +80,7 @@ def create_demo_data():
             firstname='Alice',
             lastname='Smith',
             dob=datetime(1995, 5, 15).date(),
-            password='password123',  # Intentionally vulnerable: plain text
+            password='password123',
             bio='Software developer who loves coding and coffee ☕',
             image_url='/static/uploads/0ef067dd-073e-4c5f-8ce0-1e2f04a727e3.jpg',
             created_at=datetime.now(timezone.utc)
@@ -90,7 +90,7 @@ def create_demo_data():
             firstname='Bob',
             lastname='Brown',
             dob=datetime(1992, 8, 22).date(),
-            password='qwerty',  # Intentionally vulnerable: weak password
+            password='qwerty',
             bio='Security researcher and bug bounty hunter 🔍',
             image_url='/static/uploads/0ef067dd-073e-4c5f-8ce0-1e2f04a727e3.jpg',
             created_at=datetime.now(timezone.utc)
@@ -100,7 +100,7 @@ def create_demo_data():
             firstname='Charlie',
             lastname='Davis',
             dob=datetime(1998, 3, 10).date(),
-            password='123456',  # Intentionally vulnerable: weak password
+            password='123456',
             bio='Web designer and UI/UX enthusiast 🎨',
             image_url='/static/uploads/0ef067dd-073e-4c5f-8ce0-1e2f04a727e3.jpg',
             created_at=datetime.now(timezone.utc)
@@ -110,7 +110,7 @@ def create_demo_data():
             firstname='Diana',
             lastname='Evans',
             dob=datetime(1994, 12, 5).date(),
-            password='password',  # Intentionally vulnerable: common password
+            password='password',
             bio='Data scientist working with machine learning 🤖',
             image_url='/static/uploads/0ef067dd-073e-4c5f-8ce0-1e2f04a727e3.jpg',
             created_at=datetime.now(timezone.utc)
@@ -120,153 +120,127 @@ def create_demo_data():
             firstname='Eve',
             lastname='Foster',
             dob=datetime(2000, 7, 20).date(),
-            password='letmein',  # Intentionally vulnerable: weak password
+            password='letmein',
             bio='Cybersecurity student learning ethical hacking 🛡️',
             image_url='/static/uploads/0ef067dd-073e-4c5f-8ce0-1e2f04a727e3.jpg',
             created_at=datetime.now(timezone.utc)
         )
     ]
-    
     for user in users:
         db.session.add(user)
-    
     db.session.commit()
     print(f"Created {len(users)} demo users")
-    
-    # Create friendships
+
+    # Fetch actual user IDs from the database
+    user_map = {u.username: u.id for u in User.query.filter(User.username.in_(['alice', 'bob', 'charlie', 'diana', 'eve'])).all()}
+
+    # Create friendships using actual user IDs
     print("Creating friendships...")
     friendships = [
-        Friendship(user_id=1, friend_id=2),  # alice <-> bob
-        Friendship(user_id=2, friend_id=3),  # bob <-> charlie
-        Friendship(user_id=3, friend_id=4),  # charlie <-> diana
-        Friendship(user_id=4, friend_id=5),  # diana <-> eve
+        Friendship(user_id=user_map['alice'], friend_id=user_map['bob']),
+        Friendship(user_id=user_map['bob'], friend_id=user_map['charlie']),
+        Friendship(user_id=user_map['charlie'], friend_id=user_map['diana']),
+        Friendship(user_id=user_map['diana'], friend_id=user_map['eve']),
     ]
-    
     for friendship in friendships:
         db.session.add(friendship)
-    
     db.session.commit()
     print(f"Created {len(friendships)} friendships")
-    
-    # Create demo posts
+
+    # Create demo posts using actual user IDs
     print("Creating demo posts...")
     posts = [
         Post(
-            user_id=1,
+            user_id=user_map['alice'],
             content='Welcome to VulnBook! 🎉 This is a vulnerable social networking app for security testing. #vulnbook #security',
             created_at=datetime.now(timezone.utc) - timedelta(days=5)
         ),
         Post(
-            user_id=2,
+            user_id=user_map['bob'],
             content='Just deployed my new Flask application! Love working with Python 🐍 #python #flask #webdev',
             created_at=datetime.now(timezone.utc) - timedelta(days=4)
         ),
         Post(
-            user_id=3,
+            user_id=user_map['charlie'],
             content='Found an interesting SQL injection vulnerability today. Always validate your inputs! #sqli #security #bugbounty',
             created_at=datetime.now(timezone.utc) - timedelta(days=3)
         ),
         Post(
-            user_id=4,
+            user_id=user_map['diana'],
             content='Working on a new UI design for mobile apps. User experience is everything! 📱 #ui #ux #design',
             created_at=datetime.now(timezone.utc) - timedelta(days=2)
         ),
         Post(
-            user_id=5,
+            user_id=user_map['eve'],
             content='Training a neural network to detect malware. Machine learning + cybersecurity = ❤️ #ml #ai #cybersecurity',
             created_at=datetime.now(timezone.utc) - timedelta(days=1)
         ),
         Post(
-            user_id=2,
+            user_id=user_map['bob'],
             content='Coffee break! ☕ Nothing beats a good cup of coffee while coding.',
             created_at=datetime.now(timezone.utc) - timedelta(hours=6)
         ),
         Post(
-            user_id=3,
+            user_id=user_map['charlie'],
             content='Check out this awesome security tool I found: https://github.com/example/security-tool #tools #security',
             created_at=datetime.now(timezone.utc) - timedelta(hours=3)
         )
     ]
-    
     for post in posts:
         db.session.add(post)
-    
     db.session.commit()
     print(f"Created {len(posts)} demo posts")
-    
-    # Create demo comments
+
+    # Fetch actual post IDs from the database (assume order is preserved)
+    post_objs = Post.query.order_by(Post.created_at).all()
+    post_ids = [p.id for p in post_objs]
+
+    # Create demo comments using actual user and post IDs
     print("Creating demo comments...")
     comments = [
         Comment(
-            post_id=1,
-            user_id=2,
-            content='Great initiative! Looking forward to testing this.',
-            created_at=datetime.now(timezone.utc) - timedelta(days=4, hours=23)
-        ),
+            post_id=post_ids[0], user_id=user_map['bob'], content='Great initiative! Looking forward to testing this.', created_at=datetime.now(timezone.utc) - timedelta(days=4, hours=23)),
         Comment(
-            post_id=1,
-            user_id=3,
-            content='Perfect for my security research! Thanks for sharing.',
-            created_at=datetime.now(timezone.utc) - timedelta(days=4, hours=22)
-        ),
+            post_id=post_ids[0], user_id=user_map['charlie'], content='Perfect for my security research! Thanks for sharing.', created_at=datetime.now(timezone.utc) - timedelta(days=4, hours=22)),
         Comment(
-            post_id=2,
-            user_id=1,
-            content='Flask is awesome! Keep up the good work.',
-            created_at=datetime.now(timezone.utc) - timedelta(days=3, hours=23)
-        ),
+            post_id=post_ids[1], user_id=user_map['alice'], content='Flask is awesome! Keep up the good work.', created_at=datetime.now(timezone.utc) - timedelta(days=3, hours=23)),
         Comment(
-            post_id=3,
-            user_id=4,
-            content='Very informative! Input validation is crucial.',
-            created_at=datetime.now(timezone.utc) - timedelta(days=2, hours=23)
-        ),
+            post_id=post_ids[2], user_id=user_map['diana'], content='Very informative! Input validation is crucial.', created_at=datetime.now(timezone.utc) - timedelta(days=2, hours=23)),
         Comment(
-            post_id=4,
-            user_id=5,
-            content='Love the design! User experience is indeed everything.',
-            created_at=datetime.now(timezone.utc) - timedelta(days=1, hours=23)
-        )
+            post_id=post_ids[3], user_id=user_map['eve'], content='Love the design! User experience is indeed everything.', created_at=datetime.now(timezone.utc) - timedelta(days=1, hours=23)),
     ]
-    
     for comment in comments:
         db.session.add(comment)
-    
     db.session.commit()
     print(f"Created {len(comments)} demo comments")
-    
-    # Create demo likes
+
+    # Create demo likes using actual user and post IDs
     print("Creating demo likes...")
-    # Remove all existing likes to avoid UNIQUE constraint errors
     PostLike.query.delete()
     db.session.commit()
     likes = [
-        PostLike(post_id=1, user_id=2, created_at=datetime.now(timezone.utc)),
-        PostLike(post_id=1, user_id=3, created_at=datetime.now(timezone.utc)),
-        PostLike(post_id=1, user_id=4, created_at=datetime.now(timezone.utc)),
-        PostLike(post_id=2, user_id=1, created_at=datetime.now(timezone.utc)),
-        PostLike(post_id=2, user_id=3, created_at=datetime.now(timezone.utc)),
-        PostLike(post_id=3, user_id=1, created_at=datetime.now(timezone.utc)),
-        PostLike(post_id=3, user_id=4, created_at=datetime.now(timezone.utc)),
-        PostLike(post_id=4, user_id=5, created_at=datetime.now(timezone.utc)),
-        PostLike(post_id=5, user_id=2, created_at=datetime.now(timezone.utc)),
-        PostLike(post_id=6, user_id=3, created_at=datetime.now(timezone.utc)),
-        PostLike(post_id=7, user_id=4, created_at=datetime.now(timezone.utc)),
-        # Intentionally vulnerable: Allow multiple likes from same user (but only one will be inserted due to UNIQUE constraint)
-        # PostLike(post_id=1, user_id=2),  # Duplicate like
-        # PostLike(post_id=2, user_id=1),  # Duplicate like
+        PostLike(post_id=post_ids[0], user_id=user_map['bob'], created_at=datetime.now(timezone.utc)),
+        PostLike(post_id=post_ids[0], user_id=user_map['charlie'], created_at=datetime.now(timezone.utc)),
+        PostLike(post_id=post_ids[0], user_id=user_map['diana'], created_at=datetime.now(timezone.utc)),
+        PostLike(post_id=post_ids[1], user_id=user_map['alice'], created_at=datetime.now(timezone.utc)),
+        PostLike(post_id=post_ids[1], user_id=user_map['charlie'], created_at=datetime.now(timezone.utc)),
+        PostLike(post_id=post_ids[2], user_id=user_map['alice'], created_at=datetime.now(timezone.utc)),
+        PostLike(post_id=post_ids[2], user_id=user_map['diana'], created_at=datetime.now(timezone.utc)),
+        PostLike(post_id=post_ids[3], user_id=user_map['eve'], created_at=datetime.now(timezone.utc)),
+        PostLike(post_id=post_ids[4], user_id=user_map['bob'], created_at=datetime.now(timezone.utc)),
+        PostLike(post_id=post_ids[5], user_id=user_map['charlie'], created_at=datetime.now(timezone.utc)),
+        PostLike(post_id=post_ids[6], user_id=user_map['diana'], created_at=datetime.now(timezone.utc)),
     ]
     for like in likes:
         db.session.add(like)
-    
     db.session.commit()
     print(f"Created {len(likes)} demo likes")
-    
-    # Create demo marketplace items
+
+    # Create demo marketplace items using actual user IDs
     print("Creating demo marketplace items...")
     marketplace_items = [
         MarketplaceItem(
-            user_id=2,
+            user_id=user_map['bob'],
             description='Python Programming Course - Complete Guide',
             price=29.99,
             image_url='static/uploads/python_course.jpg',
@@ -274,7 +248,7 @@ def create_demo_data():
             approved=True
         ),
         MarketplaceItem(
-            user_id=3,
+            user_id=user_map['charlie'],
             description='Security Testing Tools Bundle',
             price=49.99,
             image_url='static/uploads/security_tools.jpg',
@@ -282,7 +256,7 @@ def create_demo_data():
             approved=True
         ),
         MarketplaceItem(
-            user_id=4,
+            user_id=user_map['diana'],
             description='UI/UX Design Templates Pack',
             price=19.99,
             image_url='static/uploads/ui_templates.jpg',
@@ -290,7 +264,7 @@ def create_demo_data():
             approved=True
         ),
         MarketplaceItem(
-            user_id=5,
+            user_id=user_map['eve'],
             description='Machine Learning Algorithms eBook',
             price=15.99,
             image_url='static/uploads/ml_ebook.jpg',
@@ -298,7 +272,7 @@ def create_demo_data():
             approved=True
         ),
         MarketplaceItem(
-            user_id=1,
+            user_id=user_map['alice'],
             description='Web Development Bootcamp',
             price=99.99,
             image_url='static/uploads/web_bootcamp.jpg',
@@ -306,105 +280,48 @@ def create_demo_data():
             approved=True
         )
     ]
-    
     for item in marketplace_items:
         db.session.add(item)
-    
     db.session.commit()
     print(f"Created {len(marketplace_items)} demo marketplace items")
-    
-    # Create demo coupons
+
+    # Create demo coupons (no user dependency)
     print("Creating demo coupons...")
-    # Remove existing coupons with the same codes to avoid UNIQUE constraint errors
     coupon_codes = ['WELCOME10', 'SAVE20', 'STUDENT50', 'EXPIRED', 'FREEBIE']
     for code in coupon_codes:
         Coupon.query.filter_by(coupon_code=code).delete(synchronize_session=False)
     db.session.commit()
     coupons = [
         Coupon(
-            coupon_code='WELCOME10',
-            percentage=10,
-            max_discount=10.0,
-            price=5.0,
-            expiry_date=datetime.now(timezone.utc) + timedelta(days=30),
-            created_at=datetime.now(timezone.utc)
-        ),
+            coupon_code='WELCOME10', percentage=10, max_discount=10.0, price=5.0, expiry_date=datetime.now(timezone.utc) + timedelta(days=30), created_at=datetime.now(timezone.utc)),
         Coupon(
-            coupon_code='SAVE20',
-            percentage=20,
-            max_discount=20.0,
-            price=8.0,
-            expiry_date=datetime.now(timezone.utc) + timedelta(days=15),
-            created_at=datetime.now(timezone.utc)
-        ),
+            coupon_code='SAVE20', percentage=20, max_discount=20.0, price=8.0, expiry_date=datetime.now(timezone.utc) + timedelta(days=15), created_at=datetime.now(timezone.utc)),
         Coupon(
-            coupon_code='STUDENT50',
-            percentage=50,
-            max_discount=50.0,
-            price=15.0,
-            expiry_date=datetime.now(timezone.utc) + timedelta(days=7),
-            created_at=datetime.now(timezone.utc)
-        ),
+            coupon_code='STUDENT50', percentage=50, max_discount=50.0, price=15.0, expiry_date=datetime.now(timezone.utc) + timedelta(days=7), created_at=datetime.now(timezone.utc)),
         Coupon(
-            coupon_code='EXPIRED',
-            percentage=25,
-            max_discount=25.0,
-            price=10.0,
-            expiry_date=datetime.now(timezone.utc) - timedelta(days=1),
-            created_at=datetime.now(timezone.utc)
-        ),
+            coupon_code='EXPIRED', percentage=25, max_discount=25.0, price=10.0, expiry_date=datetime.now(timezone.utc) - timedelta(days=1), created_at=datetime.now(timezone.utc)),
         Coupon(
-            coupon_code='FREEBIE',
-            percentage=100,
-            max_discount=1000.0,
-            price=0.0,
-            expiry_date=datetime.now(timezone.utc) + timedelta(days=365),
-            created_at=datetime.now(timezone.utc)
-        )
+            coupon_code='FREEBIE', percentage=100, max_discount=1000.0, price=0.0, expiry_date=datetime.now(timezone.utc) + timedelta(days=365), created_at=datetime.now(timezone.utc)),
     ]
-    
     for coupon in coupons:
         db.session.add(coupon)
-    
     db.session.commit()
     print(f"Created {len(coupons)} demo coupons")
-    
-    # Create demo notifications
+
+    # Create demo notifications using actual user IDs
     print("Creating demo notifications...")
     notifications = [
         Notification(
-            user_id=2,
-            message='Welcome to VulnBook! Start by creating your first post.',
-            link=None,
-            is_read=False,
-            created_at=datetime.now(timezone.utc) - timedelta(days=5)
-        ),
+            user_id=user_map['bob'], message='Welcome to VulnBook! Start by creating your first post.', link=None, is_read=False, created_at=datetime.now(timezone.utc) - timedelta(days=5)),
         Notification(
-            user_id=3,
-            message='You have a new friend request.',
-            link=None,
-            is_read=False,
-            created_at=datetime.now(timezone.utc) - timedelta(days=3)
-        ),
+            user_id=user_map['charlie'], message='You have a new friend request.', link=None, is_read=False, created_at=datetime.now(timezone.utc) - timedelta(days=3)),
         Notification(
-            user_id=4,
-            message='Someone liked your post!',
-            link=None,
-            is_read=False,
-            created_at=datetime.now(timezone.utc) - timedelta(days=2)
-        ),
+            user_id=user_map['diana'], message='Someone liked your post!', link=None, is_read=False, created_at=datetime.now(timezone.utc) - timedelta(days=2)),
         Notification(
-            user_id=5,
-            message='Your marketplace item has been approved!',
-            link=None,
-            is_read=False,
-            created_at=datetime.now(timezone.utc) - timedelta(days=1)
-        )
+            user_id=user_map['eve'], message='Your marketplace item has been approved!', link=None, is_read=False, created_at=datetime.now(timezone.utc) - timedelta(days=1)),
     ]
-    
     for notification in notifications:
         db.session.add(notification)
-    
     db.session.commit()
     print(f"Created {len(notifications)} demo notifications")
 
