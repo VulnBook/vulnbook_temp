@@ -42,5 +42,11 @@ EXPOSE 5000
 ENV FLASK_APP=run.py
 ENV FLASK_ENV=production
 
-# Command to run the Flask app, binding to 0.0.0.0 for external access
-CMD ["flask", "run", "--host=0.0.0.0", "--port=5000"]
+# Set environment variable to indicate Docker environment
+ENV DOCKER_ENV=true
+
+# Add PYTHONPATH to ensure the app module is recognized
+ENV PYTHONPATH="/app"
+
+# Command to initialize the database and run the Flask app
+CMD ["sh", "-c", "python scripts/database_setup.py && flask run --host=0.0.0.0 --port=5000"]

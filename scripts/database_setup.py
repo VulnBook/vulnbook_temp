@@ -20,8 +20,8 @@ import sys
 from datetime import datetime, timedelta, timezone
 from werkzeug.security import generate_password_hash
 
-# Add the app directory to the Python path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'app'))
+# Adjust the Python path for Docker compatibility
+sys.path.insert(0, '/app')
 
 from app import create_app
 from app.db import db
@@ -430,14 +430,19 @@ def main():
     app = create_app()
 
     with app.app_context():
-        # Ask user what they want to do
-        print("\nWhat would you like to do?")
-        print("1. Create tables only")
-        print("2. Create tables and populate with demo data")
-        print("3. Reset database (drop all tables and recreate)")
-        print("4. Add demo data to existing database")
-        
-        choice = input("\nEnter your choice (1-4): ").strip()
+        # Check if running in a non-interactive environment (e.g., Docker)
+        if os.getenv("DOCKER_ENV") == "true":
+            print("Running in Docker environment. Automatically selecting choice 2.")
+            choice = "2"  # Automatically select choice 2
+        else:
+            # Ask user what they want to do
+            print("\nWhat would you like to do?")
+            print("1. Create tables only")
+            print("2. Create tables and populate with demo data")
+            print("3. Reset database (drop all tables and recreate)")
+            print("4. Add demo data to existing database")
+            
+            choice = input("\nEnter your choice (1-4): ").strip()
         
         if choice == '1':
             create_tables()

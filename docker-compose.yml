@@ -44,6 +44,11 @@ services:
     environment:
       - FLASK_APP=run.py
       - FLASK_ENV=production
+      - DATABASE_HOST=postgres
+      - DATABASE_PORT=5432
+      - DATABASE_USER=cyberpit
+      - DATABASE_PASSWORD=cyberpit123456
+      - DATABASE_NAME=vulnbook_db
     volumes:
       - ./app/static/uploads:/app/app/static/uploads
     networks:
