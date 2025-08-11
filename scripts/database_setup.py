@@ -21,7 +21,7 @@ from datetime import datetime, timedelta, timezone
 from werkzeug.security import generate_password_hash
 
 # Adjust the Python path for Docker compatibility
-sys.path.insert(0, '/app')
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from app import create_app
 from app.db import db
@@ -243,7 +243,7 @@ def create_demo_data():
             user_id=user_map['bob'],
             description='Python Programming Course - Complete Guide',
             price=29.99,
-            image_url='static/uploads/python_course.jpg',
+            image_url='/static/uploads/python_course.jpg',
             review='Comprehensive Python course covering basics to advanced topics. Perfect for beginners!',
             approved=True
         ),
@@ -251,7 +251,7 @@ def create_demo_data():
             user_id=user_map['charlie'],
             description='Security Testing Tools Bundle',
             price=49.99,
-            image_url='static/uploads/security_tools.jpg',
+            image_url='/static/uploads/security_tools.jpg',
             review='Professional security testing tools for penetration testing and vulnerability assessment.',
             approved=True
         ),
@@ -259,7 +259,7 @@ def create_demo_data():
             user_id=user_map['diana'],
             description='UI/UX Design Templates Pack',
             price=19.99,
-            image_url='static/uploads/ui_templates.jpg',
+            image_url='/static/uploads/ui_templates.jpg',
             review='Modern and responsive UI/UX templates for web and mobile applications.',
             approved=True
         ),
@@ -267,7 +267,7 @@ def create_demo_data():
             user_id=user_map['eve'],
             description='Machine Learning Algorithms eBook',
             price=15.99,
-            image_url='static/uploads/ml_ebook.jpg',
+            image_url='/static/uploads/ml_ebook.jpg',
             review='Detailed explanation of popular machine learning algorithms with code examples.',
             approved=True
         ),
@@ -275,7 +275,7 @@ def create_demo_data():
             user_id=user_map['alice'],
             description='Web Development Bootcamp',
             price=99.99,
-            image_url='static/uploads/web_bootcamp.jpg',
+            image_url='/static/uploads/web_bootcamp.jpg',
             review='Full-stack web development bootcamp with hands-on projects.',
             approved=True
         )

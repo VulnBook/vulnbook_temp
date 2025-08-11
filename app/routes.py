@@ -113,7 +113,8 @@ def create_post():
         if file:
             # VULNERABLE: Path traversal - use user-supplied filename directly
             filename = file.filename  # No sanitization, allows ../../etc/passwd etc.
-            file_path = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
+            upload_folder = os.path.join(current_app.root_path, 'static', 'uploads')
+            file_path = os.path.join(upload_folder, filename)
             file.save(file_path)
             file_type = 'image' if file.mimetype.startswith('image') else 'video'
             # Store only the path relative to 'static/'
@@ -184,6 +185,9 @@ def delete_comment(comment_id):
     if comment.user_id != decoded['user_id']:
         flash('Unauthorized action', 'danger')
         return redirect(url_for('main.single_post', post_id=comment.post_id))
+    # Delete all likes associated with this comment to avoid NotNullViolation
+    for like in comment.likes:
+        db.session.delete(like)
     db.session.delete(comment)
     db.session.commit()
     flash('Comment deleted successfully!', 'success')
@@ -456,11 +460,15 @@ def respond_friend_request(request_id, action):
         return redirect(url_for('main.notifications'))
     if action == 'accept':
         fr.status = 'accepted'
-        # Create friendship for both users
-        friendship1 = Friendship(user_id=fr.from_user_id, friend_id=fr.to_user_id)
-        friendship2 = Friendship(user_id=fr.to_user_id, friend_id=fr.from_user_id)
-        db.session.add(friendship1)
-        db.session.add(friendship2)
+        # Only add friendships if they don't already exist
+        exists1 = Friendship.query.filter_by(user_id=fr.from_user_id, friend_id=fr.to_user_id).first()
+        exists2 = Friendship.query.filter_by(user_id=fr.to_user_id, friend_id=fr.from_user_id).first()
+        if not exists1:
+            friendship1 = Friendship(user_id=fr.from_user_id, friend_id=fr.to_user_id)
+            db.session.add(friendship1)
+        if not exists2:
+            friendship2 = Friendship(user_id=fr.to_user_id, friend_id=fr.from_user_id)
+            db.session.add(friendship2)
         notif = Notification(user_id=fr.from_user_id, message='Your friend request was accepted.', link=url_for('main.profile', id=user_id))
         db.session.add(notif)
         db.session.commit()

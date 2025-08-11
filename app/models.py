@@ -93,7 +93,7 @@ class Post(db.Model):
     content = db.Column(db.Text, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     comments = db.relationship('Comment', backref='post')
-    images = db.relationship('PostImage', backref='post')
+    images = db.relationship('PostImage', backref='post', cascade="all, delete-orphan")
     likes = db.relationship('PostLike', backref='post')
     reports = db.relationship('Report', backref='post', primaryjoin="and_(Post.id==Report.post_id)")
     like_count = db.Column(db.Integer, default=0)  # Vulnerable: total like count, user-controlled
@@ -101,7 +101,7 @@ class Post(db.Model):
 class PostImage(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     post_id = db.Column(db.Integer, db.ForeignKey('post.id'), nullable=False)
-    file_path = db.Column(db.String(255), nullable=False)
+    file_path = db.Column(db.String(255), nullable=False)  # Should be '/static/uploads/filename.ext' for URLs
     file_type = db.Column(db.String(10), nullable=False)  # 'image' or 'video'
 
 class Comment(db.Model):
