@@ -155,8 +155,8 @@ VulnBook/
 │   ├── db.py             # Database configuration
 │   ├── static/           # CSS, JS, images
 │   └── templates/        # HTML templates
-├── database_setup.py     # Database setup script
-├── db_reset.py          # Database reset utility
+├── ├── database_setup.py     # Database setup script
+├── ├── db_reset.py          # Database reset utility
 ├── run.py               # Application entry point
 ├── requirements.txt     # Python dependencies
 ├── docker-compose.yml   # Docker configuration
