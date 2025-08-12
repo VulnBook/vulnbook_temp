@@ -16,7 +16,17 @@ import requests
 bp = Blueprint('main', __name__)
 
 # VULNERABLE: Weak JWT secret and no algorithm validation
-JWT_SECRET = 'weak-jwt-secret'
+JWT_SECRET = 'ucv7vjc5k3em'
+
+# Helper functions for JWT encoding and decoding
+
+def encode_jwt(payload):
+    """Encodes a payload into a JWT."""
+    return jwt.encode(payload, JWT_SECRET, algorithm='HS256')
+
+def decode_jwt(token):
+    """Decodes a JWT and returns the payload."""
+    return jwt.decode(token, JWT_SECRET, algorithms=['HS256'])
 
 def generate_token(user_id):
     payload = {
@@ -36,7 +46,8 @@ def index():
     if 'token' not in session:
         return redirect(url_for('main.login'))
     try:
-        decoded = jwt.decode(session['token'], JWT_SECRET, algorithms=['HS256'])
+        # Decode the JWT token directly from the session cookie
+        decoded = decode_jwt(session['token'])
         user = User.query.get(decoded['user_id'])
         page, per_page, offset = get_page_args(page_parameter='page', per_page_parameter='per_page')
         per_page = 10
@@ -84,7 +95,8 @@ def login():
         user = result.fetchone()
 
         if user:
-            session['token'] = generate_token(user[0])
+            # Directly set the JWT token as the session cookie
+            session['token'] = encode_jwt({'user_id': user[0], 'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=1)})
             flash('Logged in successfully!', 'success')
             return redirect(url_for('main.index'))
 
@@ -97,7 +109,7 @@ def login():
 def create_post():
     if 'token' not in session:
         return redirect(url_for('main.login'))
-    decoded = jwt.decode(session['token'], JWT_SECRET, algorithms=['HS256'])
+    decoded = decode_jwt(session['token'])
     content = request.form['content']  # VULNERABLE: No sanitization (XSS)
     post = Post(user_id=decoded['user_id'], content=content)
     db.session.add(post)
@@ -171,9 +183,26 @@ def delete_post(post_id):
     if post.user_id != decoded['user_id']:
         flash('Unauthorized action', 'danger')
         return redirect(url_for('main.single_post', post_id=post_id))
-    db.session.delete(post)
-    db.session.commit()
-    flash('Post deleted successfully!', 'success')
+
+    try:
+        # Delete associated comments and their likes before deleting the post
+        comments = Comment.query.filter_by(post_id=post_id).all()
+        for comment in comments:
+            # Delete likes associated with the comment
+            for like in comment.likes:
+                db.session.delete(like)
+            db.session.delete(comment)
+        db.session.commit()
+
+        # Now delete the post
+        db.session.delete(post)
+        db.session.commit()
+
+        flash('Your post and its associated comments and likes have been deleted!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'An error occurred while deleting the post: {str(e)}', 'danger')
+
     return redirect(url_for('main.index'))
 
 @bp.route('/comment/<int:comment_id>/delete', methods=['POST'])
@@ -702,8 +731,8 @@ def add_balance():
         except ValueError:
             flash('Invalid amount.', 'danger')
             return render_template('add_balance.html', user=user)
-        if not (1 <= amount <= 500):
-            flash('Amount must be between $1 and $500.', 'danger')
+        if amount >= 500:
+            flash('Amount must be between 1$ to $500.', 'danger')
             return render_template('add_balance.html', user=user)
         # VULNERABLE: No real payment validation, just add to session
         session['balance'] = session.get('balance', 0) + amount
